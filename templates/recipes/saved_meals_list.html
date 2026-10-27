@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Meals — Fitora{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-fitora-navy mb-1">
+                <i class="bi bi-bookmark-heart text-teal me-2"></i>Saved Meals
+            </h1>
+            <p class="text-muted mb-0">Build, customize, and log your favorite food combinations to your diary with a single click.</p>
+        </div>
+        <div>
+            <a href="{% url 'create_saved_meal' %}" class="btn btn-fitora-teal">
+                <i class="bi bi-plus-circle me-1"></i> Create Saved Meal
+            </a>
+        </div>
+    </div>
+
+    {% if saved_meals %}
+        <div class="row g-4">
+            {% for meal in saved_meals %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0 rounded-4 transition-card">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h3 class="h5 fw-bold text-fitora-navy mb-0">{{ meal.name }}</h3>
+                                <span class="badge bg-teal-subtle text-teal rounded-pill px-3 py-1">
+                                    {{ meal.items.count }} item{{ meal.items.count|pluralize }}
+                                </span>
+                            </div>
+
+                            {% if meal.description %}
+                                <p class="text-muted small mb-3 flex-grow-1">{{ meal.description|truncatewords:20 }}</p>
+                            {% else %}
+                                <p class="text-muted small fst-italic mb-3 flex-grow-1">No description provided.</p>
+                            {% endif %}
+
+                            <!-- Nutrition Badges -->
+                            <div class="bg-light p-3 rounded-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-semibold text-muted">Total Calories</span>
+                                    <span class="fw-bold text-fitora-navy fs-6">{{ meal.total_calories|floatformat:0 }} kcal</span>
+                                </div>
+                                <div class="row g-1 text-center small pt-1 border-top">
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size: 0.75rem;">Protein</div>
+                                        <div class="fw-bold text-primary">{{ meal.total_protein|floatformat:1 }}g</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size: 0.75rem;">Carbs</div>
+                                        <div class="fw-bold text-warning">{{ meal.total_carbs|floatformat:1 }}g</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size: 0.75rem;">Fat</div>
+                                        <div class="fw-bold text-danger">{{ meal.total_fat|floatformat:1 }}g</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex gap-2 mt-auto">
+                                <a href="{% url 'saved_meal_detail' meal.id %}" class="btn btn-outline-fitora-navy btn-sm flex-fill">
+                                    <i class="bi bi-eye"></i> View & Edit
+                                </a>
+                                <button type="button" class="btn btn-fitora-lime btn-sm px-3 text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#logModal{{ meal.id }}">
+                                    <i class="bi bi-plus-lg"></i> Log to Diary
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log to Diary Modal -->
+                <div class="modal fade" id="logModal{{ meal.id }}" tabindex="-1" aria-labelledby="logModalLabel{{ meal.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                            <form action="{% url 'log_saved_meal_to_diary' meal.id %}" method="post">
+                                {% csrf_token %}
+                                <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-fitora-navy" id="logModalLabel{{ meal.id }}">
+                                        Log "{{ meal.name }}" to Diary
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body py-3">
+                                    <p class="text-muted small">Choose the meal slot and date to log this combination ({{ meal.items.count }} items, {{ meal.total_calories|floatformat:0 }} kcal):</p>
+                                    
+                                    <div class="mb-3">
+                                        <label for="mealCategory{{ meal.id }}" class="form-label fw-semibold small">Meal Category</label>
+                                        <select class="form-select" id="mealCategory{{ meal.id }}" name="meal_category" required>
+                                            <option value="breakfast">Breakfast</option>
+                                            <option value="lunch" selected>Lunch</option>
+                                            <option value="dinner">Dinner</option>
+                                            <option value="snack">Snack</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="diaryDate{{ meal.id }}" class="form-label fw-semibold small">Date</label>
+                                        <input type="date" class="form-control" id="diaryDate{{ meal.id }}" name="date" value="{{ today|default:'' }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-fitora-teal px-4">Log to Diary</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center my-4">
+            <div class="mb-3">
+                <i class="bi bi-bookmark-plus text-muted" style="font-size: 3.5rem;"></i>
+            </div>
+            <h3 class="h4 fw-bold text-fitora-navy mb-2">No Saved Meals Yet</h3>
+            <p class="text-muted mx-auto mb-4" style="max-width: 500px;">
+                Save time every day by grouping your common food combinations—like your daily post-workout shake or power breakfast—into reusable Saved Meals.
+            </p>
+            <div>
+                <a href="{% url 'create_saved_meal' %}" class="btn btn-fitora-teal px-4 py-2">
+                    <i class="bi bi-plus-circle me-1"></i> Create Your First Saved Meal
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

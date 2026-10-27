@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">{{ title }}</h2>
+            <p class="text-muted mb-0">Create and save your personalized foods with custom serving sizes and macronutrients.</p>
+        </div>
+        <a href="{% url 'food_diary' %}" class="btn btn-outline-secondary btn-sm">&larr; Back to Food Diary</a>
+    </div>
+
+    <div class="row g-4">
+        <!-- New Custom Food Form -->
+        <div class="col-lg-5">
+            <div class="fitora-card">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-plus-circle text-teal me-1" style="color: #14B8A6;"></i> Add Custom Food</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Food Name *</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Brand or Restaurant</label>
+                        {{ form.brand }}
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Serving Amount *</label>
+                            {{ form.serving_size }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Serving Unit</label>
+                            {{ form.serving_unit }}
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-navy">Calories (kcal) *</label>
+                            {{ form.calories }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-teal" style="color: #14B8A6;">Protein (g)</label>
+                            {{ form.protein }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-navy">Carbs (g)</label>
+                            {{ form.carbohydrates }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-lime" style="color: #84CC16;">Fat (g)</label>
+                            {{ form.fat }}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-fitora-primary w-100">
+                        <i class="bi bi-save me-1"></i> Save to Custom Foods
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Custom Foods List -->
+        <div class="col-lg-7">
+            <div class="fitora-card h-100">
+                <h5 class="fw-bold text-navy mb-3 d-flex justify-content-between align-items-center">
+                    <span>My Saved Foods</span>
+                    <span class="badge bg-light text-muted border">{{ custom_foods.count }}</span>
+                </h5>
+
+                {% if custom_foods %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Food Name</th>
+                                    <th>Serving</th>
+                                    <th>Calories</th>
+                                    <th>P / C / F</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for food in custom_foods %}
+                                    <tr>
+                                        <td>
+                                            <strong class="text-navy">{{ food.name }}</strong>
+                                            {% if food.brand %}<small class="text-muted d-block">{{ food.brand }}</small>{% endif %}
+                                        </td>
+                                        <td class="text-muted small">{{ food.serving_size }} {{ food.serving_unit }}</td>
+                                        <td class="fw-bold text-teal" style="color: #14B8A6;">{{ food.calories }} kcal</td>
+                                        <td class="small text-muted">{{ food.protein }}g / {{ food.carbohydrates }}g / {{ food.fat }}g</td>
+                                        <td class="text-end">
+                                            <form method="post" action="{% url 'delete_custom_food' food.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-light text-danger py-0 px-2" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-egg fs-1 text-muted mb-2"></i>
+                        <h6 class="fw-bold text-navy">No custom foods saved yet</h6>
+                        <p class="small text-muted mb-0">Custom foods allow you to record your frequent homemade recipes or snacks with exact nutrition.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

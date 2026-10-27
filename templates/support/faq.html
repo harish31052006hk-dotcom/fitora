@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="text-center max-w-700 mx-auto mb-5">
+        <h6 class="text-teal fw-bold text-uppercase" style="color: #14B8A6;">Help Center</h6>
+        <h2 class="display-6 fw-bold text-navy">Frequently Asked Questions</h2>
+        <p class="text-muted">
+            Search our verified PostgreSQL knowledge base for immediate guidance on accounts, calorie equations, recipes, and technical support.
+        </p>
+
+        <!-- Search Bar -->
+        <form method="get" class="d-flex gap-2 max-w-500 mx-auto mt-4">
+            <input type="text" name="q" class="form-control form-control-lg" placeholder="Search questions or keywords..." value="{{ search_query }}">
+            <input type="hidden" name="category" value="{{ selected_category }}">
+            <button type="submit" class="btn btn-fitora-primary px-4">
+                <i class="bi bi-search"></i> Search
+            </button>
+            {% if search_query %}
+                <a href="{% url 'faq' %}" class="btn btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        {% for cat in categories %}
+            <a href="{% url 'faq' %}?category={{ cat }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm {% if selected_category == cat %}btn-fitora-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                {{ cat }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- FAQ Accordion -->
+    <div class="max-w-800 mx-auto">
+        {% if faqs %}
+            <div class="accordion fitora-card p-2" id="faqAccordion">
+                {% for faq in faqs %}
+                    <div class="accordion-item border-0 mb-2">
+                        <h2 class="accordion-header" id="heading{{ faq.id }}">
+                            <button class="accordion-button collapsed rounded-3 fw-bold text-navy" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ faq.id }}" aria-expanded="false" aria-controls="collapse{{ faq.id }}" style="background-color: #F8FAFC;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-teal-subtle text-teal border small py-1 px-2" style="color: #14B8A6; font-size: 0.75rem;">{{ faq.category }}</span>
+                                    <span>{{ faq.question }}</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ faq.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ faq.id }}" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body text-muted pt-3 pb-3 px-4">
+                                {{ faq.answer }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="text-center text-muted small mt-3">
+                Showing {{ faqs.count }} verified FAQ result{{ faqs.count|pluralize }} retrieved live from PostgreSQL database.
+            </div>
+        {% else %}
+            <div class="fitora-card text-center py-5">
+                <i class="bi bi-search fs-1 text-muted mb-2"></i>
+                <h5 class="fw-bold text-navy">No FAQs matched your search</h5>
+                <p class="text-muted small max-w-400 mx-auto mb-3">
+                    We couldn't find an answer matching "{{ search_query }}". You can ask our AI Assistant or submit a support ticket!
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'faq' %}" class="btn btn-outline-secondary btn-sm">Clear Search</a>
+                    <a href="{% url 'support_tickets' %}" class="btn btn-fitora-primary btn-sm">Open Support Ticket</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Need More Help Banner -->
+    <div class="max-w-800 mx-auto mt-5">
+        <div class="fitora-card p-4 text-center" style="background: linear-gradient(135deg, #142B3B, #1E3D52); color: #FFFFFF;">
+            <h5 class="fw-bold text-white mb-2">Still need help?</h5>
+            <p class="text-white-50 small mb-3">
+                Ask our 24/7 Fitora AI Assistant for immediate context-aware guidance or submit a tracked ticket directly to our technical desk.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'assistant_page' %}" class="btn btn-fitora-lime btn-sm px-4">
+                    <i class="bi bi-stars me-1"></i> Ask AI Assistant
+                </a>
+                <a href="{% url 'support_tickets' %}" class="btn btn-outline-light btn-sm px-4">
+                    <i class="bi bi-ticket-perforated me-1"></i> Submit Support Ticket
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">{{ title }}</h2>
+            <p class="text-muted mb-0">Build batch recipes, compute per-serving macros, and save frequent meals for quick logging.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'create_recipe' %}?type=meal" class="btn btn-fitora-lime">
+                <i class="bi bi-heart-fill me-1"></i> + Save New Meal
+            </a>
+            <a href="{% url 'create_recipe' %}" class="btn btn-fitora-primary">
+                <i class="bi bi-plus-lg me-1"></i> + Create Recipe
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2">
+        <li class="nav-item">
+            <a class="nav-link {% if filter_type != 'favorites' %}active bg-navy text-white{% else %}text-muted{% endif %}" href="{% url 'recipe_list' %}">
+                <i class="bi bi-collection-fill me-1"></i> All Recipes ({{ recipes.count }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filter_type == 'favorites' %}active bg-danger text-white{% else %}text-muted{% endif %}" href="{% url 'recipe_list' %}?tab=favorites">
+                <i class="bi bi-heart-fill me-1"></i> Favorite Meals
+            </a>
+        </li>
+    </ul>
+
+    <!-- Recipe Cards Grid -->
+    {% if recipes %}
+        <div class="row g-4">
+            {% for recipe in recipes %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="fitora-card fitora-card-hover h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold text-navy mb-1">{{ recipe.name }}</h5>
+                                {% if recipe.is_favorite_meal %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-heart-fill"></i> Saved Meal</span>
+                                {% endif %}
+                            </div>
+
+                            {% if recipe.description %}
+                                <p class="text-muted small mb-3">{{ recipe.description|truncatewords:18 }}</p>
+                            {% endif %}
+
+                            <div class="p-3 rounded-3 bg-light mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted small">Per Serving:</span>
+                                    <span class="fw-bold text-teal fs-5" style="color: #14B8A6;">{{ recipe.per_serving_calories }} kcal</span>
+                                </div>
+                                <div class="small text-muted d-flex justify-content-between">
+                                    <span>Protein: <strong>{{ recipe.per_serving_protein }}g</strong></span>
+                                    <span>Carbs: <strong>{{ recipe.per_serving_carbohydrates }}g</strong></span>
+                                    <span>Fat: <strong>{{ recipe.per_serving_fat }}g</strong></span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between text-muted small mb-3">
+                                <span><i class="bi bi-pie-chart me-1"></i> {{ recipe.servings }} serving{{ recipe.servings|pluralize }}</span>
+                                <span><i class="bi bi-card-checklist me-1"></i> {{ recipe.ingredients.count }} ingredient{{ recipe.ingredients.count|pluralize }}</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <a href="{% url 'recipe_detail' recipe.id %}" class="btn btn-sm btn-fitora-outline flex-grow-1">
+                                View & Edit
+                            </a>
+                            <button class="btn btn-sm btn-fitora-primary" data-bs-toggle="modal" data-bs-target="#logModal{{ recipe.id }}" title="Log to Diary">
+                                <i class="bi bi-journal-plus"></i> Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Recipe to Diary Modal -->
+                <div class="modal fade" id="logModal{{ recipe.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="post" action="{% url 'log_recipe_to_diary' recipe.id %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold">Log "{{ recipe.name }}" to Diary</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Date</label>
+                                        <input type="date" name="date" class="form-control" value="{% now 'Y-m-d' %}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Meal Category</label>
+                                        <select name="meal_category" class="form-select">
+                                            <option value="Breakfast">Breakfast</option>
+                                            <option value="Lunch" selected>Lunch</option>
+                                            <option value="Dinner">Dinner</option>
+                                            <option value="Snacks">Snacks</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Servings Consumed</label>
+                                        <input type="number" name="servings" class="form-control" value="1.0" step="0.5" min="0.5" max="10">
+                                        <small class="text-muted">1 serving provides {{ recipe.per_serving_calories }} kcal.</small>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-fitora-primary">Log to Diary</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="fitora-card text-center py-5">
+            <div class="rounded-circle bg-light d-inline-flex p-3 text-muted mb-3">
+                <i class="bi bi-egg-fried fs-1 text-teal" style="color: #14B8A6;"></i>
+            </div>
+            <h5 class="fw-bold text-navy">No recipes created yet</h5>
+            <p class="text-muted small max-w-400 mx-auto mb-4">
+                Combine your favourite ingredients into recipes or saved meals to automatically calculate total calories and per-serving macronutrients.
+            </p>
+            <a href="{% url 'create_recipe' %}" class="btn btn-fitora-primary">
+                <i class="bi bi-plus-lg me-1"></i> Create Your First Recipe
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
