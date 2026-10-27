@@ -27,5 +27,11 @@ services:
         sync: false
       - key: AI_API_KEY
         sync: false
+      - key: AI_API_URL
+        value: https://api.groq.com/openai/v1/chat/completions
+      - key: AI_MODEL
+        value: qwen/qwen3.8-27b
+      - key: AI_API_TIMEOUT
+        value: "35"
       - key: NUTRITION_API_KEY
         sync: false

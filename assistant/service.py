@@ -23,9 +23,10 @@ class FitoraAssistantService:
     def __init__(self):
         self.api_key = getattr(settings, 'AI_API_KEY', '').strip()
         self.api_url = getattr(settings, 'AI_API_URL', '').strip()
-        self.timeout = 5 # Strict 5-second timeout for LLM API calls
+        self.model = getattr(settings, 'AI_MODEL', 'qwen/qwen3.8-27b').strip()
+        self.timeout = max(10, int(getattr(settings, 'AI_API_TIMEOUT', 35)))
 
-    def process_message(self, user_message, user=None, conversation_id=None, page=''):
+    def process_message(self, user_message, user=None, conversation_id=None, page='', image_data=None, history=None):
         """
         Main processing pipeline for user queries.
         Returns a dictionary with:
@@ -39,7 +40,11 @@ class FitoraAssistantService:
         }
         """
         conv_id = conversation_id or str(uuid.uuid4())
-        clean_msg = user_message.strip()
+        clean_msg = (user_message or '').strip()
+        image_data = image_data or None
+
+        if not clean_msg and image_data:
+            clean_msg = 'Please analyze the attached image and provide relevant nutrition or fitness insights. Explain what can and cannot be reliably inferred from the image.'
 
         if not clean_msg:
             return {
@@ -51,35 +56,47 @@ class FitoraAssistantService:
                 'conversation_id': conv_id
             }
 
-        # 1. Check for Support Ticket Creation request
-        ticket_result = self._check_support_ticket_intent(clean_msg, user)
-        if ticket_result:
-            ticket_result['conversation_id'] = conv_id
-            return ticket_result
+        # Use deterministic, database-backed actions for explicit text-only intents.
+        # Image requests should always reach the multimodal model for visual analysis.
+        if not image_data:
+            ticket_result = self._check_support_ticket_intent(clean_msg, user)
+            if ticket_result:
+                ticket_result['conversation_id'] = conv_id
+                return ticket_result
 
-        # 2. Check for Error Code Inquiries (HTTP 400, 401, 403, 404, 429, 500, 503, APP-001)
-        error_result = self._check_error_code_inquiry(clean_msg)
-        if error_result:
-            error_result['conversation_id'] = conv_id
-            return error_result
+            error_result = self._check_error_code_inquiry(clean_msg)
+            if error_result:
+                error_result['conversation_id'] = conv_id
+                return error_result
 
-        # 3. Check for User Personal Calorie / Nutrition Inquiries
-        nutrition_result = self._check_user_nutrition_inquiry(clean_msg, user)
-        if nutrition_result:
-            nutrition_result['conversation_id'] = conv_id
-            return nutrition_result
+            nutrition_result = self._check_user_nutrition_inquiry(clean_msg, user)
+            if nutrition_result:
+                nutrition_result['conversation_id'] = conv_id
+                return nutrition_result
 
         # 4. Retrieve Relevant FAQs from PostgreSQL
         relevant_faqs = self._retrieve_relevant_faqs(clean_msg)
 
         # 5. If LLM API Key is configured, attempt LLM call with PostgreSQL FAQ context
         if self.api_key and self.api_url:
-            llm_result = self._call_llm_api(clean_msg, relevant_faqs, user)
+            llm_result = self._call_llm_api(clean_msg, relevant_faqs, user, image_data=image_data, history=history)
             if llm_result:
                 llm_result['conversation_id'] = conv_id
                 return llm_result
-            # If LLM API failed (timeout, rate limit, error), fall through to FAQ fallback!
+            # Image understanding cannot be replaced by a text-only FAQ fallback.
             logger.warning("LLM API call was unsuccessful. Falling back to internal FAQ knowledge base.")
+            if image_data:
+                return {
+                    'response': "I couldn't analyze that image right now because the AI service did not return a usable response. Please retry shortly, or ask your question without an image.",
+                    'source': 'ai_unavailable', 'ticket_offered': False,
+                    'ticket_created': False, 'ticket_id': None, 'conversation_id': conv_id,
+                }
+        elif image_data:
+            return {
+                'response': "Image analysis is temporarily unavailable because the AI service is not configured. Please try again later or continue with a text question.",
+                'source': 'ai_unavailable', 'ticket_offered': False,
+                'ticket_created': False, 'ticket_id': None, 'conversation_id': conv_id,
+            }
 
         # 6. Fallback / Direct FAQ Knowledge Base Response
         fallback_resp = self._build_faq_response(clean_msg, relevant_faqs)
@@ -178,7 +195,15 @@ class FitoraAssistantService:
         Never invents personal nutrition data.
         """
         lower = message.lower()
-        calorie_keywords = ['my calories', 'calories remaining', 'calories today', 'how many calories', 'intake today', 'calories left', 'what did i eat']
+        # Only queries about recorded intake should be answered from the food diary.
+        # General goal-setting questions such as 'How many calories should I eat?' must reach the LLM.
+        calorie_keywords = [
+            'my calories', 'calories remaining', 'calories today', 'intake today',
+            'calories left', 'what did i eat', 'my calorie intake', 'my food diary',
+            'how many calories have i', 'how many calories did i',
+            'how much have i eaten', 'what have i eaten today',
+            'what have i logged', 'calorie intake today', 'my nutrition today'
+        ]
         if any(kw in lower for kw in calorie_keywords):
             if not user or not user.is_authenticated:
                 return {
@@ -250,87 +275,143 @@ class FitoraAssistantService:
         scored_faqs.sort(key=lambda x: x[0], reverse=True)
         return [f[1] for f in scored_faqs[:3]]
 
-    def _call_llm_api(self, message, relevant_faqs, user):
-        """
-        Calls external LLM API with retrieved PostgreSQL FAQ context and error handling.
-        """
+    def _call_llm_api(self, message, relevant_faqs, user, image_data=None, history=None):
+        """Call the configured chat-completions provider, supporting text and images."""
         faq_context = ""
         if relevant_faqs:
-            faq_context = "Fitora Official FAQ Knowledge Base Context:\n" + "\n".join(
+            faq_context = "Fitora official FAQ context (use only when relevant):\n" + "\n".join(
                 [f"Q: {f.question}\nA: {f.answer}" for f in relevant_faqs]
             )
 
+        profile_context = ""
+        if user and getattr(user, 'is_authenticated', False):
+            try:
+                profile = Profile.objects.filter(user=user).first()
+                if profile:
+                    profile_context = (
+                        "\nUser profile facts from Fitora (use as context, not as medical advice):\n"
+                        f"Daily calorie target: {profile.daily_calorie_goal} kcal\n"
+                        f"Current weight: {profile.current_weight if profile.current_weight is not None else 'not set'} kg\n"
+                        f"Target weight: {profile.target_weight if profile.target_weight is not None else 'not set'} kg\n"
+                        f"Daily protein/carbohydrate/fat goals: {profile.daily_protein_goal}g / {profile.daily_carbs_goal}g / {profile.daily_fat_goal}g\n"
+                    )
+            except Exception:
+                logger.debug("Unable to load optional Fitora profile context for AI request.")
+
         system_prompt = (
-            "You are the Fitora AI Nutrition & Technical Support Assistant for Fitora (Tagline: Your Goals. Your Journey. Your Fit.).\n"
-            "Guidelines:\n"
-            "1. Base answers on the provided official Fitora FAQ context.\n"
-            "2. Explain error codes accurately if asked.\n"
-            "3. If a question cannot be resolved or is a bug/support request, offer to create a support ticket.\n"
-            "4. Avoid medical diagnoses or unsupported health claims.\n"
-            "5. Be concise, polite, encouraging, and clear.\n\n"
-            f"{faq_context}"
+            "You are Fitora AI, a practical fitness, nutrition and food-tracking assistant. "
+            "Be accurate, direct, supportive and specific. Answer the actual question rather than forcing it into the FAQ. "
+            "When estimating daily calories, explain that body weight alone is insufficient for a precise estimate; ask for age, height, sex and activity level when needed. "
+            "Distinguish estimates from values actually recorded in Fitora. Never invent food diary data. "
+            "For food photos, describe visible foods and give clearly labelled approximate portion/calorie estimates only when reasonable; ask for portion size or ingredients when uncertain. "
+            "Do not diagnose conditions, prescribe treatment, encourage unsafe restriction, or present image-based nutrition estimates as exact. "
+            "For a bug or unresolved app issue, explain next steps and offer a support ticket. Never claim an action was completed unless the system did it.\n\n"
+            f"{faq_context}{profile_context}"
         )
 
         try:
-            # Check if Gemini endpoint or generic OpenAI format
+            # Google's Gemini API uses its own request/response structure.
             if 'generativelanguage.googleapis.com' in self.api_url:
-                url = f"{self.api_url}?key={self.api_key}"
-                payload = {
-                    "contents": [{
-                        "parts": [
-                            {"text": f"{system_prompt}\n\nUser Question: {message}"}
-                        ]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "maxOutputTokens": 600
-                    }
-                }
-                res = requests.post(url, json=payload, timeout=self.timeout)
-                if res.status_code == 200:
-                    data = res.json()
+                contents = [{"role": "user" if item.get('role') == 'user' else 'model', "parts": [{"text": item.get('content', '')}]}
+                            for item in (history or [])[-8:] if item.get('role') in ('user', 'assistant') and item.get('content')]
+                parts = [{"text": message}]
+                if image_data:
+                    mime_type, encoded = self._split_image_data(image_data)
+                    if not mime_type:
+                        logger.warning("AI image rejected because its data URI was invalid.")
+                        return None
+                    parts.append({"inline_data": {"mime_type": mime_type, "data": encoded}})
+                contents.append({"role": "user", "parts": parts})
+                url = self.api_url + ("&" if "?" in self.api_url else "?") + f"key={self.api_key}"
+                payload = {"system_instruction": {"parts": [{"text": system_prompt}]}, "contents": contents, "generationConfig": {"temperature": 0.3, "maxOutputTokens": 900}}
+                response = requests.post(url, json=payload, timeout=(5, self.timeout))
+                if response.status_code == 200:
+                    data = response.json()
                     candidates = data.get('candidates', [])
                     if candidates:
-                        text = candidates[0]['content']['parts'][0]['text']
-                        return {
-                            'response': text,
-                            'source': 'llm_api',
-                            'ticket_offered': 'support ticket' in text.lower(),
-                            'ticket_created': False,
-                            'ticket_id': None,
-                        }
-            else:
-                # Standard OpenAI compatible completion endpoint
-                headers = {'Authorization': f"Bearer {self.api_key}", 'Content-Type': 'application/json'}
-                payload = {
-                    "model": "gpt-3.5-turbo",
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": message}
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 500
-                }
-                res = requests.post(self.api_url, headers=headers, json=payload, timeout=self.timeout)
-                if res.status_code == 200:
-                    data = res.json()
-                    text = data['choices'][0]['message']['content']
-                    return {
-                        'response': text,
-                        'source': 'llm_api',
-                        'ticket_offered': 'support ticket' in text.lower(),
-                        'ticket_created': False,
-                        'ticket_id': None,
-                    }
+                        text = ''.join(part.get('text', '') for part in candidates[0].get('content', {}).get('parts', []))
+                        if text.strip():
+                            return self._llm_result(text)
+                logger.warning("AI provider returned HTTP %s.", response.status_code)
+                return None
 
-            logger.warning(f"LLM API returned non-200 code: {res.status_code}")
+            headers = {
+                'Authorization': f"Bearer {self.api_key}",
+                'Content-Type': 'application/json',
+            }
+            if image_data:
+                mime_type, _encoded = self._split_image_data(image_data)
+                if not mime_type:
+                    logger.warning("AI image rejected because its data URI was invalid.")
+                    return None
+                user_content = [
+                    {"type": "text", "text": message},
+                    {"type": "image_url", "image_url": {"url": image_data}},
+                ]
+            else:
+                user_content = message
+
+            history_messages = [
+                {"role": item.get('role'), "content": item.get('content', '')}
+                for item in (history or [])[-8:]
+                if item.get('role') in ('user', 'assistant') and isinstance(item.get('content'), str) and item.get('content').strip()
+            ]
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    *history_messages,
+                    {"role": "user", "content": user_content},
+                ],
+                "temperature": 0.35,
+                "max_completion_tokens": 900,
+                "stream": False,
+            }
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=(5, self.timeout))
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get('choices') or []
+                text = choices[0].get('message', {}).get('content', '') if choices else ''
+                if isinstance(text, list):
+                    text = ''.join(part.get('text', '') for part in text if isinstance(part, dict))
+                if isinstance(text, str) and text.strip():
+                    return self._llm_result(text.strip())
+                logger.warning("AI provider returned an empty completion.")
+                return None
+
+            # Log status only. Never log response bodies, tokens, or user prompts.
+            logger.warning("AI provider returned HTTP %s.", response.status_code)
             return None
         except requests.exceptions.Timeout:
-            logger.warning("LLM API timed out. Falling back to internal FAQ database.")
+            logger.warning("AI provider request timed out after %s seconds.", self.timeout)
             return None
-        except Exception as e:
-            logger.warning(f"LLM API request error: {str(e)}")
+        except requests.exceptions.RequestException as exc:
+            logger.warning("AI provider transport error (%s).", exc.__class__.__name__)
             return None
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            logger.warning("AI provider response could not be parsed (%s).", exc.__class__.__name__)
+            return None
+        except Exception as exc:
+            logger.exception("Unexpected AI provider integration error (%s).", exc.__class__.__name__)
+            return None
+
+    @staticmethod
+    def _split_image_data(image_data):
+        """Return (MIME type, base64 payload) for a validated image data URI."""
+        match = re.fullmatch(r'data:(image/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\r\n]+)', image_data or '')
+        if not match:
+            return None, None
+        return match.group(1), re.sub(r'\s+', '', match.group(2))
+
+    @staticmethod
+    def _llm_result(text):
+        return {
+            'response': text,
+            'source': 'llm_api',
+            'ticket_offered': 'support ticket' in text.lower(),
+            'ticket_created': False,
+            'ticket_id': None,
+        }
 
     def _build_faq_response(self, message, relevant_faqs):
         """

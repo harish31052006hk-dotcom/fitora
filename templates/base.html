@@ -28,12 +28,12 @@
     <nav class="navbar navbar-expand-lg navbar-fitora">
         <div class="container">
             <a class="navbar-brand navbar-brand-logo" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">
-                <i class="bi bi-activity text-teal" style="color: #14B8A6;"></i>
+                <span class="brand-symbol"><i class="bi bi-activity"></i></span>
                 <span>FITORA</span>
-                <span class="brand-badge">PRO</span>
+                <span class="brand-badge">WELLNESS</span>
             </a>
 
-            <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#fitoraNav" aria-controls="fitoraNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler text-primary border-0" type="button" data-bs-toggle="collapse" data-bs-target="#fitoraNav" aria-controls="fitoraNav" aria-expanded="false" aria-label="Toggle navigation">
                 <i class="bi bi-list fs-2"></i>
             </button>
 
@@ -81,7 +81,7 @@
                 <!-- User Account Actions -->
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
-                        <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+                        <a href="{% url 'profile' %}" class="btn btn-account btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
                             <i class="bi bi-person-circle"></i>
                             <span class="fw-semibold">{{ user.username }}</span>
                         </a>
@@ -89,7 +89,7 @@
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </a>
                     {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-sm text-white px-3 py-2 fw-semibold">Sign In</a>
+                        <a href="{% url 'login' %}" class="btn btn-sm btn-signin px-3 py-2 fw-semibold">Sign In</a>
                         <a href="{% url 'register' %}" class="btn btn-fitora-lime btn-sm px-4 py-2">Get Started</a>
                     {% endif %}
                 </div>
@@ -166,16 +166,14 @@
         </div>
 
         <div class="chat-footer">
-            <div class="input-group">
-                <input type="text" id="chatInput" class="form-control border-end-0" placeholder="Ask about foods, calories, errors..." maxlength="1000">
-                <button id="chatSendBtn" class="btn btn-fitora-primary px-3" type="button" aria-label="Send Message">
-                    <i class="bi bi-send-fill"></i>
-                </button>
+            <div id="chatImagePreview" class="chat-image-preview" hidden></div>
+            <input type="file" id="chatImageInput" accept="image/png,image/jpeg,image/webp" hidden>
+            <div class="chat-compose-row">
+                <button id="chatAttachBtn" class="chat-attach-btn" type="button" aria-label="Attach an image" title="Attach food or fitness image"><i class="bi bi-paperclip"></i></button>
+                <input type="text" id="chatInput" class="form-control chat-text-input" placeholder="Ask about food, calories, or attach an image…" maxlength="1000" autocomplete="off">
+                <button id="chatSendBtn" class="btn btn-fitora-primary chat-send-btn" type="button" aria-label="Send message"><i class="bi bi-arrow-up"></i></button>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-1 px-1">
-                <small class="text-muted" style="font-size: 0.7rem;">Powered by Fitora Knowledge Base & MongoDB</small>
-                <a href="{% url 'error_guide' %}" class="text-decoration-none text-muted" style="font-size: 0.7rem;">Error Codes</a>
-            </div>
+            <div class="chat-footnote"><span>AI insights · Estimates may vary</span><a href="{% url 'error_guide' %}">Help & errors</a></div>
         </div>
     </div>
 

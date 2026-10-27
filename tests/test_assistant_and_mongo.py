@@ -119,3 +119,45 @@ class AIAssistantAndMongoDBTests(TestCase):
         self.assertTrue(data['success'])
         self.assertTrue(data['saved_to_mongo'])
         mock_mongo_feedback.assert_called_once()
+
+class AIProviderConfigurationTests(TestCase):
+    def test_calorie_goal_estimate_is_not_misclassified_as_diary_lookup(self):
+        service = FitoraAssistantService()
+        result = service._check_user_nutrition_inquiry(
+            "How many calories should I eat for fat loss if I weigh 70 kg?", None
+        )
+        self.assertIsNone(result)
+
+    def test_image_data_uri_accepts_supported_formats_only(self):
+        self.assertEqual(
+            FitoraAssistantService._split_image_data('data:image/png;base64,aGVsbG8='),
+            ('image/png', 'aGVsbG8=')
+        )
+        self.assertEqual(
+            FitoraAssistantService._split_image_data('data:image/svg+xml;base64,PHN2Zz4='),
+            (None, None)
+        )
+
+    @patch('assistant.service.requests.post')
+    def test_groq_payload_uses_configured_model_and_vision_content(self, mock_post):
+        service = FitoraAssistantService()
+        service.api_key = 'test-only-key'
+        service.api_url = 'https://api.groq.com/openai/v1/chat/completions'
+        service.model = 'qwen/qwen3.8-27b'
+        service.timeout = 35
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'choices': [{'message': {'content': 'This looks like a meal. Estimates are approximate.'}}]
+        }
+        mock_post.return_value = mock_response
+        image = 'data:image/jpeg;base64,aGVsbG8='
+
+        result = service._call_llm_api('Estimate this meal', [], None, image_data=image)
+
+        self.assertEqual(result['source'], 'llm_api')
+        kwargs = mock_post.call_args.kwargs
+        self.assertEqual(kwargs['json']['model'], 'qwen/qwen3.8-27b')
+        self.assertEqual(kwargs['timeout'], (5, 35))
+        user_message = kwargs['json']['messages'][1]['content']
+        self.assertEqual(user_message[1]['image_url']['url'], image)

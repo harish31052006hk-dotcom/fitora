@@ -151,11 +151,13 @@ MONGODB_URI = os.environ.get('MONGODB_URI', '')
 MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'fitora_logs')
 
 # AI Assistant Settings
-AI_API_KEY = os.environ.get('AI_API_KEY', '')
+AI_API_KEY = os.environ.get('AI_API_KEY', '').strip()
 AI_API_URL = os.environ.get(
     'AI_API_URL',
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
-)
+    'https://api.groq.com/openai/v1/chat/completions'
+).strip() or 'https://api.groq.com/openai/v1/chat/completions'
+AI_MODEL = os.environ.get('AI_MODEL', 'qwen/qwen3.8-27b').strip() or 'qwen/qwen3.8-27b'
+AI_API_TIMEOUT = int(os.environ.get('AI_API_TIMEOUT', '35'))
 
 # Third-party Nutrition API Settings
 NUTRITION_API_KEY = os.environ.get('NUTRITION_API_KEY', '')

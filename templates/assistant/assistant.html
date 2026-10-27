@@ -1,177 +1,50 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4 max-w-850">
-    <div class="fitora-card p-0 overflow-hidden shadow-lg" style="height: calc(100vh - 220px); min-height: 550px; display: flex; flex-direction: column;">
-        <!-- Header -->
-        <div class="p-3 px-4 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #142B3B 0%, #1A394E 100%); color: #FFFFFF;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle p-2 bg-white-10 text-lime" style="background: rgba(255,255,255,0.1); color: #A3E635;">
-                    <i class="bi bi-stars fs-4"></i>
-                </div>
-                <div>
-                    <h5 class="fw-bold mb-0 text-white">Ask Fitora AI Assistant</h5>
-                    <small class="text-white-50">PostgreSQL Knowledge Base • Live User Food Diary • MongoDB Audit</small>
-                </div>
-            </div>
-            <span class="badge bg-teal-subtle text-teal border px-2 py-1" style="color: #14B8A6;">24/7 Active</span>
+<section class="assistant-page-shell container py-4 py-lg-5">
+    <div class="assistant-page-heading">
+        <div>
+            <span class="eyebrow"><span class="status-dot"></span> FITORA INTELLIGENCE</span>
+            <h1 class="page-title mt-2 mb-2">Your personal wellness copilot.</h1>
+            <p class="page-subtitle mb-0">Ask about nutrition, your goals, meals, or upload an image for context-aware insights.</p>
         </div>
-
-        <!-- Chat History -->
-        <div id="fullChatMessages" class="p-4 flex-grow-1 overflow-y-auto" style="background-color: #F8FAFC; display: flex; flex-direction: column; gap: 1rem;">
-            <!-- Welcome message -->
-            <div class="chat-bubble chat-bubble-ai max-w-700">
-                <div class="fw-bold text-navy mb-1">Welcome to Fitora AI Consultation! 👋</div>
-                I am your intelligent nutrition and technical support partner. I retrieve official answers from our database before generating advice, explain system error codes, analyze your live food diary intake, or open a tracked support ticket.
-                <div class="mt-3 pt-2 border-top">
-                    <span class="small fw-semibold text-muted d-block mb-1">Try one of these prompt shortcuts:</span>
-                    <div class="d-flex flex-wrap gap-2">
-                        {% if user.is_authenticated %}
-                            <button class="btn btn-sm btn-outline-secondary full-prompt-btn" data-prompt="How many calories have I consumed today?">My calories today</button>
-                        {% endif %}
-                        <button class="btn btn-sm btn-outline-secondary full-prompt-btn" data-prompt="How are daily calories calculated?">Calorie equation</button>
-                        <button class="btn btn-sm btn-outline-secondary full-prompt-btn" data-prompt="What causes HTTP 429 Too Many Requests?">Explain 429</button>
-                        <button class="btn btn-sm btn-outline-secondary full-prompt-btn" data-prompt="What is application error APP-001?">APP-001 code</button>
-                        <button class="btn btn-sm btn-outline-secondary full-prompt-btn" data-prompt="Create a support ticket for an issue">Open ticket</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Input Box -->
-        <div class="p-3 bg-white border-top">
-            <div class="input-group">
-                <input type="text" id="fullChatInput" class="form-control form-control-lg" placeholder="Ask about recipes, remaining calories, macro calculations, or error codes..." maxlength="1000">
-                <button id="fullChatSendBtn" class="btn btn-fitora-primary px-4" type="button">
-                    <i class="bi bi-send-fill me-1"></i> Send
-                </button>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2 px-1 text-muted small">
-                <span>All conversations and feedback are logged securely to MongoDB Atlas.</span>
-                <a href="{% url 'error_guide' %}" class="text-teal text-decoration-none">Error Documentation &rarr;</a>
-            </div>
-        </div>
+        <a class="btn btn-fitora-outline" href="{% url 'dashboard' %}"><i class="bi bi-arrow-left me-2"></i>Back to overview</a>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const input = document.getElementById('fullChatInput');
-        const sendBtn = document.getElementById('fullChatSendBtn');
-        const messages = document.getElementById('fullChatMessages');
+    <div class="assistant-workspace frost-panel mt-4">
+        <header class="assistant-workspace-header">
+            <div class="assistant-avatar"><i class="bi bi-stars"></i></div>
+            <div class="flex-grow-1">
+                <h2 class="h6 mb-1">Fitora AI</h2>
+                <p class="mb-0">Nutrition guidance · Food understanding · App support</p>
+            </div>
+            <span class="assistant-status"><span class="status-dot"></span> Ready for a question</span>
+        </header>
 
-        let conversationId = sessionStorage.getItem('fitora_conv_id') || ('conv_' + Date.now());
+        <div id="fullChatMessages" class="assistant-conversation" aria-live="polite">
+            <div class="chat-bubble chat-bubble-ai welcome-ai-bubble">
+                <strong>Welcome{% if user.is_authenticated %}, {{ user.first_name|default:user.username|escape }}{% endif %}.</strong>
+                <p class="mb-2 mt-2">I can help you interpret your food log, understand calorie and macro targets, compare meal options, and review nutrition or workout images. Share the goal and any useful context.</p>
+                <div class="prompt-caption">START WITH A QUESTION</div>
+                <div class="prompt-grid">
+                    {% if user.is_authenticated %}<button class="prompt-chip full-prompt-btn" data-prompt="How many calories have I consumed today?">My intake today <i class="bi bi-arrow-up-right"></i></button>{% endif %}
+                    <button class="prompt-chip full-prompt-btn" data-prompt="How many calories should I eat for fat loss if I weigh 70 kg? Explain what other details you need for a better estimate.">Estimate calorie needs <i class="bi bi-arrow-up-right"></i></button>
+                    <button class="prompt-chip full-prompt-btn" data-prompt="Explain how I should balance protein, carbohydrates, and fats for my goal.">Balance my macros <i class="bi bi-arrow-up-right"></i></button>
+                    <button class="prompt-chip full-prompt-btn" data-prompt="Give me practical instructions for logging a meal and checking its nutrition." >Logging a meal <i class="bi bi-arrow-up-right"></i></button>
+                </div>
+            </div>
+        </div>
 
-        function sendMsg(text) {
-            const query = text || input.value.trim();
-            if (!query) return;
-
-            // Render user bubble
-            appendFullMessage('user', query);
-            input.value = '';
-
-            // Typing indicator
-            const typingId = showFullTyping();
-
-            fetch('/assistant/api/chat/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: JSON.stringify({
-                    message: query,
-                    conversation_id: conversationId,
-                    page: window.location.pathname
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                removeFullTyping(typingId);
-                appendFullMessage('ai', data.response, data);
-            })
-            .catch(err => {
-                removeFullTyping(typingId);
-                appendFullMessage('ai', "I am currently unable to reach the knowledge service. Please try again or check the FAQ.");
-            });
-        }
-
-        sendBtn.addEventListener('click', () => sendMsg());
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMsg();
-            }
-        });
-
-        document.querySelectorAll('.full-prompt-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const p = btn.getAttribute('data-prompt');
-                if (p) sendMsg(p);
-            });
-        });
-
-        function appendFullMessage(sender, text, meta = {}) {
-            const bubble = document.createElement('div');
-            bubble.className = sender === 'user' ? 'chat-bubble chat-bubble-user max-w-700' : 'chat-bubble chat-bubble-ai max-w-700';
-            
-            // Format markdown
-            let formatted = text
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/`([^`]+)`/g, '<code class="bg-light text-dark px-1 rounded">$1</code>')
-                .replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-2 mb-1">$1</h6>')
-                .replace(/^\- (.*$)/gim, '<div class="ms-2">• $1</div>')
-                .replace(/\n/g, '<br>');
-            
-            bubble.innerHTML = formatted;
-
-            if (sender === 'ai') {
-                const footer = document.createElement('div');
-                footer.className = 'd-flex justify-content-between align-items-center mt-3 pt-2 border-top small text-muted';
-                
-                const badge = document.createElement('span');
-                badge.className = 'badge bg-light text-secondary border';
-                badge.innerText = meta.source ? `Source: ${meta.source}` : 'Fitora Assistant';
-                footer.appendChild(badge);
-
-                if (meta.ticket_created && meta.ticket_id) {
-                    const ticketLink = document.createElement('a');
-                    ticketLink.href = '/support/tickets/';
-                    ticketLink.className = 'text-success fw-bold text-decoration-none';
-                    ticketLink.innerHTML = `<i class="bi bi-ticket-perforated-fill me-1"></i> Ticket #${meta.ticket_id} Created`;
-                    footer.appendChild(ticketLink);
-                }
-                bubble.appendChild(footer);
-            }
-
-            messages.appendChild(bubble);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function showFullTyping() {
-            const id = 'full_typing_' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'chat-bubble chat-bubble-ai text-muted py-2 px-3 small';
-            div.innerHTML = '<span class="spinner-grow spinner-grow-sm text-teal me-2"></span> Fitora AI is querying knowledge base...';
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-            return id;
-        }
-
-        function removeFullTyping(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        function getCsrfToken() {
-            const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
-            return cookie ? cookie.split('=')[1] : '';
-        }
-    });
-</script>
+        <footer class="assistant-composer">
+            <div id="fullChatImagePreview" class="chat-image-preview" hidden></div>
+            <input type="file" id="fullChatImageInput" accept="image/png,image/jpeg,image/webp" hidden>
+            <div class="assistant-composer-box">
+                <button id="fullChatAttachBtn" class="chat-attach-btn" type="button" aria-label="Attach an image" title="Attach a food or fitness image"><i class="bi bi-paperclip"></i></button>
+                <input type="text" id="fullChatInput" class="form-control chat-text-input" placeholder="Ask Fitora anything, or attach an image…" maxlength="1000" autocomplete="off">
+                <button id="fullChatSendBtn" class="btn btn-fitora-primary chat-send-btn" type="button" aria-label="Send message"><i class="bi bi-arrow-up"></i></button>
+            </div>
+            <div class="composer-note"><span>Images are sent to the configured AI provider for analysis. Avoid sensitive documents.</span><span>AI estimates are informational, not medical advice.</span></div>
+        </footer>
+    </div>
+</section>
 {% endblock %}

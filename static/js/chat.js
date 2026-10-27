@@ -1,236 +1,255 @@
-/**
- * FITORA AI Assistant Floating Chat Widget
- * Handles conversational queries, FAQ retrieval, nutrition balance, error codes,
- * support ticket creation, and MongoDB feedback submission.
- */
-
+/* Fitora AI — shared, resilient chat for the floating widget and full-page assistant. */
 document.addEventListener('DOMContentLoaded', () => {
-    const trigger = document.getElementById('fitoraAiTrigger');
-    const chatWindow = document.getElementById('fitoraChatWindow');
-    const closeBtn = document.getElementById('chatCloseBtn');
-    const sendBtn = document.getElementById('chatSendBtn');
-    const input = document.getElementById('chatInput');
-    const messagesContainer = document.getElementById('chatMessages');
-
-    if (!trigger || !chatWindow) return;
-
-    // Retrieve or initialize unique conversation ID
-    let conversationId = sessionStorage.getItem('fitora_conv_id');
-    if (!conversationId) {
-        conversationId = 'conv_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
-        sessionStorage.setItem('fitora_conv_id', conversationId);
-    }
-
-    // Toggle Chat Window
-    trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        const isHidden = chatWindow.style.display === 'none' || chatWindow.classList.contains('d-none');
-        if (isHidden) {
-            chatWindow.style.display = 'flex';
-            chatWindow.classList.remove('d-none');
-            input.focus();
-            scrollToBottom();
-        } else {
-            chatWindow.style.display = 'none';
+    const getConversationId = () => {
+        let id = sessionStorage.getItem('fitora_conv_id');
+        if (!id) {
+            id = `conv_${Math.random().toString(36).slice(2, 11)}_${Date.now()}`;
+            sessionStorage.setItem('fitora_conv_id', id);
         }
-    });
-
-    closeBtn.addEventListener('click', () => {
-        chatWindow.style.display = 'none';
-    });
-
-    // Send Message
-    function sendMessage(textToSend) {
-        const text = textToSend || input.value.trim();
-        if (!text) return;
-
-        // Render User Message
-        appendMessage('user', text);
-        input.value = '';
-
-        // Show typing indicator
-        const typingId = showTypingIndicator();
-
-        // Get CSRF Token
-        const csrfToken = getCsrfToken();
-
-        fetch('/assistant/api/chat/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                message: text,
-                conversation_id: conversationId,
-                page: window.location.pathname
-            })
-        })
-        .then(response => {
-            removeTypingIndicator(typingId);
-            if (!response.ok) {
-                throw new Error(`Server returned HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            appendMessage('ai', data.response, data);
-        })
-        .catch(err => {
-            removeTypingIndicator(typingId);
-            appendMessage('ai', "I'm having trouble connecting right now. Please check your connection or visit the [FAQ & Help](/faq/) page.");
-            console.error('AI Assistant Error:', err);
-        });
-    }
-
-    sendBtn.addEventListener('click', () => sendMessage());
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-
-    // Quick prompt buttons
-    document.querySelectorAll('.quick-prompt-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const prompt = btn.getAttribute('data-prompt');
-            if (prompt) {
-                sendMessage(prompt);
-            }
-        });
-    });
-
-    function appendMessage(sender, text, meta = {}) {
-        const bubble = document.createElement('div');
-        bubble.className = sender === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-ai';
-
-        // Format Markdown simple bold and bullets
-        const formattedText = formatMarkdown(text);
-        bubble.innerHTML = formattedText;
-
-        // If AI, add source tag and feedback buttons
-        if (sender === 'ai') {
-            const footer = document.createElement('div');
-            footer.className = 'd-flex justify-content-between align-items-center mt-2 pt-1 border-top small text-muted';
-            
-            const sourceBadge = document.createElement('span');
-            sourceBadge.className = 'badge bg-light text-secondary border';
-            sourceBadge.innerText = meta.source ? `Source: ${formatSource(meta.source)}` : 'Fitora Assistant';
-            footer.appendChild(sourceBadge);
-
-            const feedbackGroup = document.createElement('div');
-            feedbackGroup.className = 'btn-group btn-group-sm';
-            
-            const thumbUp = document.createElement('button');
-            thumbUp.className = 'btn btn-outline-secondary btn-sm py-0 px-1';
-            thumbUp.innerHTML = '<i class="bi bi-hand-thumbs-up"></i>';
-            thumbUp.title = 'Helpful';
-            thumbUp.onclick = () => submitFeedback(conversationId, 'helpful', thumbUp, thumbDown);
-
-            const thumbDown = document.createElement('button');
-            thumbDown.className = 'btn btn-outline-secondary btn-sm py-0 px-1';
-            thumbDown.innerHTML = '<i class="bi bi-hand-thumbs-down"></i>';
-            thumbDown.title = 'Unhelpful';
-            thumbDown.onclick = () => submitFeedback(conversationId, 'unhelpful', thumbDown, thumbUp);
-
-            feedbackGroup.appendChild(thumbUp);
-            feedbackGroup.appendChild(thumbDown);
-            footer.appendChild(feedbackGroup);
-
-            bubble.appendChild(footer);
-
-            // If a support ticket was created, add ticket link
-            if (meta.ticket_created && meta.ticket_id) {
-                const ticketNotice = document.createElement('div');
-                ticketNotice.className = 'alert alert-success py-2 px-3 mt-2 mb-0 small';
-                ticketNotice.innerHTML = `<i class="bi bi-ticket-perforated-fill me-1"></i> <a href="/support/tickets/" class="alert-link">View your Support Ticket (${meta.ticket_id})</a>`;
-                bubble.appendChild(ticketNotice);
-            }
-        }
-
-        messagesContainer.appendChild(bubble);
-        scrollToBottom();
-    }
-
-    function showTypingIndicator() {
-        const id = 'typing_' + Date.now();
-        const indicator = document.createElement('div');
-        indicator.id = id;
-        indicator.className = 'chat-bubble chat-bubble-ai text-muted py-2 px-3 small';
-        indicator.innerHTML = '<span class="spinner-grow spinner-grow-sm text-teal me-2" role="status"></span> Fitora AI is thinking...';
-        messagesContainer.appendChild(indicator);
-        scrollToBottom();
         return id;
+    };
+    const conversationId = getConversationId();
+
+    const csrfToken = () => {
+        const item = document.cookie.split('; ').find(row => row.trim().startsWith('csrftoken='));
+        return item ? decodeURIComponent(item.trim().slice('csrftoken='.length)) : '';
+    };
+
+    const escapeHTML = value => String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    function formatMarkdown(value) {
+        let result = escapeHTML(value);
+        result = result.replace(/^### (.*)$/gm, '<h6 class="response-heading">$1</h6>');
+        result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        result = result.replace(/(^|[^*])\*(.*?)\*/g, '$1<em>$2</em>');
+        result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+        result = result.replace(/^[-•] (.*)$/gm, '<div class="response-list-item">$1</div>');
+        result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g,
+            '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        return result.replace(/\n/g, '<br>');
     }
 
-    function removeTypingIndicator(id) {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-    }
+    function initChat(options) {
+        const input = document.getElementById(options.inputId);
+        const sendBtn = document.getElementById(options.sendId);
+        const messages = document.getElementById(options.messagesId);
+        const fileInput = document.getElementById(options.fileId);
+        const attachBtn = document.getElementById(options.attachId);
+        const preview = document.getElementById(options.previewId);
+        if (!input || !sendBtn || !messages) return;
 
-    function scrollToBottom() {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+        let selectedFile = null;
+        let selectedDataUrl = null;
+        let requestInProgress = false;
+        const history = [];
 
-    function submitFeedback(convId, rating, activeBtn, inactiveBtn) {
-        activeBtn.classList.remove('btn-outline-secondary');
-        activeBtn.classList.add(rating === 'helpful' ? 'btn-success' : 'btn-danger');
-        inactiveBtn.disabled = true;
+        const scrollBottom = () => { messages.scrollTop = messages.scrollHeight; };
+        const showTyping = () => {
+            const element = document.createElement('div');
+            element.className = 'chat-bubble chat-bubble-ai chat-typing';
+            element.innerHTML = '<span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Fitora is thinking</span>';
+            element.setAttribute('aria-live', 'polite');
+            messages.appendChild(element);
+            scrollBottom();
+            return element;
+        };
 
-        fetch('/assistant/api/feedback/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({
-                conversation_id: convId,
-                rating: rating
-            })
-        }).catch(err => console.log('Feedback log note:', err));
+        function appendMessage(sender, text, meta = {}, imageUrl = null) {
+            const bubble = document.createElement('div');
+            bubble.className = sender === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-ai';
+            if (imageUrl && sender === 'user') {
+                const image = document.createElement('img');
+                image.className = 'chat-attachment-preview';
+                image.src = imageUrl;
+                image.alt = 'Image attached to your message';
+                bubble.appendChild(image);
+            }
+            if (text) {
+                const content = document.createElement('div');
+                content.className = 'chat-response-content';
+                content.innerHTML = formatMarkdown(text);
+                bubble.appendChild(content);
+            }
+            if (sender === 'ai') {
+                const footer = document.createElement('div');
+                footer.className = 'chat-message-meta';
+                const source = document.createElement('span');
+                source.className = 'chat-source-label';
+                source.textContent = meta.source ? `Fitora · ${formatSource(meta.source)}` : 'Fitora AI';
+                footer.appendChild(source);
+                if (meta.ticket_created && meta.ticket_id) {
+                    const ticket = document.createElement('a');
+                    ticket.href = '/support/tickets/';
+                    ticket.className = 'chat-ticket-link';
+                    ticket.textContent = `Ticket ${meta.ticket_id} created · View tickets`;
+                    footer.appendChild(ticket);
+                }
+                bubble.appendChild(footer);
+            }
+            messages.appendChild(bubble);
+            scrollBottom();
+        }
+
+        function resetImage() {
+            selectedFile = null;
+            selectedDataUrl = null;
+            if (fileInput) fileInput.value = '';
+            if (preview) {
+                preview.hidden = true;
+                preview.replaceChildren();
+            }
+        }
+
+        if (attachBtn && fileInput) {
+            attachBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                if (!file) return;
+                const accepted = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!accepted.includes(file.type)) {
+                    appendMessage('ai', 'Please attach a JPEG, PNG, or WebP image.');
+                    resetImage();
+                    return;
+                }
+                if (file.size > 4 * 1024 * 1024) {
+                    appendMessage('ai', 'That image is larger than 4 MB. Please choose a smaller image.');
+                    resetImage();
+                    return;
+                }
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    selectedDataUrl = typeof reader.result === 'string' ? reader.result : null;
+                    if (preview && selectedDataUrl) {
+                        const image = document.createElement('img');
+                        image.src = selectedDataUrl;
+                        image.alt = 'Selected image';
+                        image.className = 'chat-selected-image';
+                        const label = document.createElement('span');
+                        label.textContent = file.name;
+                        const remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'chat-remove-image';
+                        remove.setAttribute('aria-label', 'Remove attached image');
+                        remove.textContent = '×';
+                        remove.addEventListener('click', resetImage);
+                        preview.replaceChildren(image, label, remove);
+                        preview.hidden = false;
+                    }
+                };
+                reader.onerror = () => {
+                    resetImage();
+                    appendMessage('ai', 'I could not read that image. Please select it again.');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function sendMessage(suggestedText = null) {
+            if (requestInProgress) return;
+            const text = typeof suggestedText === 'string' ? suggestedText.trim() : input.value.trim();
+            if (!text && !selectedFile) return;
+            if (selectedFile && !selectedDataUrl) {
+                appendMessage('ai', 'Your image is still loading. Please try again in a moment.');
+                return;
+            }
+
+            const imageForBubble = selectedDataUrl;
+            appendMessage('user', text || 'Please analyze this image.', {}, imageForBubble);
+            input.value = '';
+            requestInProgress = true;
+            sendBtn.disabled = true;
+            input.disabled = true;
+            if (attachBtn) attachBtn.disabled = true;
+            const typing = showTyping();
+            const controller = new AbortController();
+            const timer = window.setTimeout(() => controller.abort(), 45000);
+
+            try {
+                const body = {
+                    message: text,
+                    conversation_id: conversationId,
+                    page: window.location.pathname,
+                    history: history.slice(-8)
+                };
+                if (selectedDataUrl) body.image_data = selectedDataUrl;
+                const response = await fetch('/assistant/api/chat/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || `The service returned HTTP ${response.status}.`);
+                if (!data.response) throw new Error(data.error || 'The AI service returned an empty response.');
+                history.push({ role: 'user', content: text || '[Image attached for analysis]' });
+                history.push({ role: 'assistant', content: data.response });
+                if (history.length > 10) history.splice(0, history.length - 10);
+                appendMessage('ai', data.response, data);
+            } catch (error) {
+                const message = error.name === 'AbortError'
+                    ? 'This request took too long. Please retry with a shorter question or a smaller image.'
+                    : (error.message || 'I could not reach Fitora AI. Please try again.');
+                appendMessage('ai', `${message}\n\nYou can also visit [FAQ & Help](/faq/) while the service recovers.`);
+                console.error('Fitora AI request failed:', error.name || 'Error');
+            } finally {
+                window.clearTimeout(timer);
+                typing.remove();
+                resetImage();
+                requestInProgress = false;
+                sendBtn.disabled = false;
+                input.disabled = false;
+                if (attachBtn) attachBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', () => sendMessage());
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        document.querySelectorAll(options.promptSelector).forEach(button => {
+            button.addEventListener('click', () => {
+                const prompt = button.getAttribute('data-prompt');
+                if (prompt) {
+                    if (options.fullPage) sendMessage(prompt);
+                    else {
+                        const chat = document.getElementById('fitoraChatWindow');
+                        if (chat) { chat.style.display = 'flex'; chat.classList.remove('d-none'); }
+                        sendMessage(prompt);
+                    }
+                }
+            });
+        });
     }
 
     function formatSource(source) {
-        const map = {
-            'faq_database': 'PostgreSQL FAQs',
-            'error_guide': 'Error Code Guide',
-            'user_nutrition': 'Live Food Diary',
-            'ticket_system': 'Support Ticket Desk',
-            'llm_api': 'AI Language Model',
-            'fallback_faq': 'Fitora Knowledge Base'
+        const labels = {
+            faq_database: 'Knowledge base', error_guide: 'Error guide',
+            user_nutrition: 'Food diary', ticket_system: 'Support desk',
+            llm_api: 'AI model', fallback_faq: 'Knowledge base', system: 'Fitora'
         };
-        return map[source] || source;
+        return labels[source] || source;
     }
 
-    function formatMarkdown(text) {
-        if (!text) return '';
-        let escaped = text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        // Bold
-        escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Italic
-        escaped = escaped.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        // Inline code
-        escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-light text-dark px-1 py-0 rounded">$1</code>');
-        // Headings
-        escaped = escaped.replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-2 mb-1">$1</h6>');
-        // Bullet points
-        escaped = escaped.replace(/^\- (.*$)/gim, '<div class="ms-2">• $1</div>');
-        // Links
-        escaped = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-teal text-decoration-none fw-semibold">$1</a>');
-        // Linebreaks
-        escaped = escaped.replace(/\n/g, '<br>');
-
-        return escaped;
+    const trigger = document.getElementById('fitoraAiTrigger');
+    const chatWindow = document.getElementById('fitoraChatWindow');
+    const closeBtn = document.getElementById('chatCloseBtn');
+    if (trigger && chatWindow) {
+        trigger.addEventListener('click', event => {
+            event.preventDefault();
+            const opening = chatWindow.style.display === 'none' || chatWindow.classList.contains('d-none');
+            chatWindow.style.display = opening ? 'flex' : 'none';
+            chatWindow.classList.toggle('d-none', !opening);
+            if (opening) document.getElementById('chatInput')?.focus();
+        });
+        closeBtn?.addEventListener('click', () => { chatWindow.style.display = 'none'; chatWindow.classList.add('d-none'); });
+        initChat({ inputId: 'chatInput', sendId: 'chatSendBtn', messagesId: 'chatMessages', fileId: 'chatImageInput', attachId: 'chatAttachBtn', previewId: 'chatImagePreview', promptSelector: '.quick-prompt-btn', fullPage: false });
     }
-
-    function getCsrfToken() {
-        const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
-        return cookie ? cookie.split('=')[1] : '';
-    }
+    initChat({ inputId: 'fullChatInput', sendId: 'fullChatSendBtn', messagesId: 'fullChatMessages', fileId: 'fullChatImageInput', attachId: 'fullChatAttachBtn', previewId: 'fullChatImagePreview', promptSelector: '.full-prompt-btn', fullPage: true });
 });

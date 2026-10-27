@@ -5,6 +5,16 @@
 
 ---
 
+## Local environment and AI assistant
+
+1. Copy `.env.example` to `.env`.
+2. Create a fresh Groq API key from the official console and set `AI_API_KEY` in your local `.env`. Never commit `.env` or put the key into browser JavaScript.
+3. The default model is `qwen/qwen3.8-27b`, which supports text and image inputs. Adjust `AI_MODEL` only to a model enabled for your account.
+4. The assistant accepts JPEG, PNG, and WebP uploads up to 4 MB, keeps a limited recent text history per page session, and returns image-based insights with explicit uncertainty. Visual nutrition estimates are approximate and not medical advice.
+5. In Render, configure `AI_API_KEY`, `AI_API_URL`, and `AI_MODEL` under the web service's Environment settings, then deploy the latest commit.
+
+The key previously pasted into a chat should be revoked and replaced. Do not copy that exposed value into this repository.
+
 ## 1. Project Overview
 
 **Fitora** is a full-stack, enterprise-grade fitness and nutrition tracking web platform engineered with Python and Django. Drawing functional inspiration from MyFitnessPal and a modern commercial lifestyle aesthetic, Fitora combines precision macronutrient tracking, daily energy calculations, recipe and meal portion builders, interactive Chart.js analytics, and an intelligent AI assistant backed by a PostgreSQL FAQ knowledge base and MongoDB Atlas audit logs.
@@ -23,12 +33,12 @@
 
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
-| **Frontend** | HTML5, CSS3, JavaScript, Bootstrap 5, Bootstrap Icons | Responsive, accessible UI with custom branding (#142B3B Navy, #14B8A6 Teal, #A3E635 Lime Green) |
+| **Frontend** | HTML5, CSS3, JavaScript, Bootstrap 5, Bootstrap Icons | Responsive, accessible UI with custom cryo-glass branding (royal blue, warm ivory, and translucent frost surfaces) |
 | **Visualization** | Chart.js 4.4 | Interactive calorie trend bars, weight tracking lines, and macro doughnut charts |
 | **Backend** | Python 3.14 + Django 6.1 | Secure MVC architecture, CSRF protection, password validators, and session management |
 | **Relational DB** | PostgreSQL (Production) / SQLite (Local Dev Fallback) | Managed via `dj-database-url` and `psycopg-3` for user profiles, food entries, recipes, FAQs, and tickets |
 | **NoSQL DB** | MongoDB Atlas | Managed via `pymongo` for conversational audit logs and AI response feedback ratings |
-| **AI Assistant** | Server-side LLM Integration | Google Gemini / OpenAI compatible API with PostgreSQL FAQ context injection and offline matcher |
+| **AI Assistant** | Server-side LLM Integration | Groq chat-completions API with multimodal image support, PostgreSQL FAQ context, profile context, and safe fallback responses |
 | **External API** | Open Food Facts API | Nutrition database query with connection timeouts, rate-limit safety, and database fallback |
 | **Production Server** | Gunicorn + WhiteNoise | WSGI production server with compressed static asset serving on Render |
 
@@ -217,9 +227,12 @@ Visit `http://127.0.0.1:8000/` in your browser.
 4. It will provision:
    - A **PostgreSQL Database** (`fitora-db`)
    - A **Web Service** (`fitora`) running `gunicorn config.wsgi:application`
-5. Under Environment Variables in the Render dashboard, supply:
-   - `MONGODB_URI` (your MongoDB Atlas connection string)
-   - `AI_API_KEY` (your Google Gemini or OpenAI API key)
+5. Under Environment Variables in the Render dashboard, supply or verify:
+   - `MONGODB_URI` (your MongoDB Atlas connection string; optional for core assistant replies)
+   - `AI_API_KEY` (a newly generated Groq API key; do not reuse a key pasted into a chat)
+   - `AI_API_URL=https://api.groq.com/openai/v1/chat/completions`
+   - `AI_MODEL=qwen/qwen3.8-27b`
+   - `AI_API_TIMEOUT=35`
    - `NUTRITION_API_KEY` (optional)
 6. Once deployed, run migrations and seed data in the Render Shell:
    ```bash
