@@ -31,10 +31,21 @@ def dashboard_view(request):
     Personalized fitness and nutrition dashboard calculated from actual database records.
     Displays daily calories, remaining energy balance, macro rings, recent entries, and charts.
     """
-    today = timezone.now().date()
+    # Allow viewing a specific date via GET parameter or default to today
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            from datetime import datetime
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = timezone.now().date()
+    else:
+        selected_date = timezone.now().date()
+
+    today = selected_date
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
-    # Fetch today's food entries
+    # Fetch selected day's food entries
     today_entries = FoodEntry.objects.filter(user=request.user, date=today)
 
     # Calculate actual consumed totals using Decimal
@@ -51,6 +62,8 @@ def dashboard_view(request):
 
     # Formula: Calories Remaining = Calorie Goal - Calories Consumed
     calories_remaining = calorie_goal - calories_consumed
+    goal_exceeded = calories_remaining < Decimal('0.00')
+    exceeded_by = abs(calories_remaining) if goal_exceeded else Decimal('0.00')
 
     # Calculate percentages for UI progress rings
     cal_percentage = min(100, int((calories_consumed / calorie_goal * 100))) if calorie_goal > 0 else 0
@@ -92,6 +105,8 @@ def dashboard_view(request):
         'calories_consumed': calories_consumed,
         'calorie_goal': calorie_goal,
         'calories_remaining': calories_remaining,
+        'goal_exceeded': goal_exceeded,
+        'exceeded_by': exceeded_by,
         'protein_consumed': protein_consumed,
         'protein_goal': protein_goal,
         'carbs_consumed': carbs_consumed,

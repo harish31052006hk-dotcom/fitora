@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ meal.name }} — Fitora{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 680px;">
+    <div class="mb-4">
+        <a href="{% url 'saved_meal_detail' meal.id %}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i> Back to Meal Details
+        </a>
+        <h1 class="h2 fw-bold text-fitora-navy mt-2">Edit Saved Meal</h1>
+        <p class="text-muted">Update the title or notes for this saved meal combination.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small mb-3">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="id_name" class="form-label fw-semibold text-fitora-navy">Meal Name *</label>
+                <input type="text" name="name" id="id_name" class="form-control {% if form.name.errors %}is-invalid{% endif %}" value="{{ form.name.value|default:meal.name }}" required>
+                {% if form.name.errors %}
+                    <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="id_description" class="form-label fw-semibold text-fitora-navy">Description (Optional)</label>
+                <textarea name="description" id="id_description" rows="3" class="form-control {% if form.description.errors %}is-invalid{% endif %}">{{ form.description.value|default:meal.description }}</textarea>
+                {% if form.description.errors %}
+                    <div class="invalid-feedback">{{ form.description.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'saved_meal_detail' meal.id %}" class="btn btn-light px-4">Cancel</a>
+                <button type="submit" class="btn btn-fitora-teal px-4">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

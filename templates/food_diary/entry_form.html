@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4 max-w-700">
+<div class="container py-4 max-w-750">
     <div class="fitora-card">
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
             <div>
                 <h4 class="fw-bold text-navy mb-1">{{ title }}</h4>
-                <p class="text-muted small mb-0">Search verified foods or enter custom nutritional values.</p>
+                <p class="text-muted small mb-0">Search the PostgreSQL food database or enter custom nutritional values.</p>
             </div>
             <a href="{% url 'food_diary' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back to Diary
@@ -17,40 +17,46 @@
             <!-- Live Search Bar -->
             <div class="mb-4 p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                 <label class="form-label fw-bold small text-navy">
-                    <i class="bi bi-search text-teal me-1" style="color: #14B8A6;"></i> Search Verified Foods & Database
+                    <i class="bi bi-search text-teal me-1" style="color: #14B8A6;"></i> Search Food Database (e.g., Idli, Dosa, Rice, Chapati, Egg, Oats, Chicken)
                 </label>
                 <div class="input-group">
-                    <input type="text" id="foodSearchInput" class="form-control" placeholder="Type food name (e.g., Chicken Breast, Oats, Banana)...">
+                    <input type="text" id="foodSearchInput" class="form-control" placeholder="Search by food name (case-insensitive partial match)...">
                     <button class="btn btn-fitora-primary px-3" type="button" id="foodSearchBtn">
                         <i class="bi bi-search"></i> Search
                     </button>
                 </div>
                 <div id="searchStatus" class="small text-muted mt-2 d-none"></div>
-                <div id="searchResultsList" class="list-group mt-2 d-none" style="max-height: 250px; overflow-y: auto;"></div>
+                <div id="searchResultsList" class="list-group mt-2 d-none" style="max-height: 280px; overflow-y: auto;"></div>
             </div>
         {% endif %}
 
         <!-- Food Entry Form -->
         <form method="post" id="foodEntryForm">
             {% csrf_token %}
+            <input type="hidden" name="food_id" id="selectedFoodId">
+            {{ form.base_serving_size }}
+            {{ form.base_calories }}
+            {{ form.base_protein }}
+            {{ form.base_carbohydrates }}
+            {{ form.base_fat }}
             
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold">Date</label>
+                    <label class="form-label small fw-bold">Date *</label>
                     {{ form.date }}
-                    {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors.0 }}</div>{% endif %}
+                    {% if form.date.errors %}<div class="text-danger small mt-1">{{ form.date.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold">Meal Category</label>
+                    <label class="form-label small fw-bold">Meal Category *</label>
                     {{ form.meal_category }}
-                    {% if form.meal_category.errors %}<div class="text-danger small">{{ form.meal_category.errors.0 }}</div>{% endif %}
+                    {% if form.meal_category.errors %}<div class="text-danger small mt-1">{{ form.meal_category.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-8">
                     <label class="form-label small fw-bold">Food Name *</label>
                     {{ form.food_name }}
-                    {% if form.food_name.errors %}<div class="text-danger small">{{ form.food_name.errors.0 }}</div>{% endif %}
+                    {% if form.food_name.errors %}<div class="text-danger small mt-1">{{ form.food_name.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-4">
@@ -58,43 +64,56 @@
                     {{ form.brand }}
                 </div>
 
-                <!-- Serving amount & unit -->
-                <div class="col-md-6">
+                <!-- Portion Quantity & Serving Size -->
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Portion Quantity *</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}<div class="text-danger small mt-1">{{ form.quantity.errors.0 }}</div>{% endif %}
+                    <small class="text-muted" style="font-size: 0.72rem;">Multiplier (e.g., 1.0, 2.0 portions)</small>
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label small fw-bold">Serving Amount *</label>
                     {{ form.serving_amount }}
-                    {% if form.serving_amount.errors %}<div class="text-danger small">{{ form.serving_amount.errors.0 }}</div>{% endif %}
-                    <small class="text-muted" style="font-size: 0.75rem;">Adjusting this auto-scales the nutrition below.</small>
+                    {% if form.serving_amount.errors %}<div class="text-danger small mt-1">{{ form.serving_amount.errors.0 }}</div>{% endif %}
+                    <small class="text-muted" style="font-size: 0.72rem;">Unit measure (e.g., 100g, 150ml)</small>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label small fw-bold">Serving Unit</label>
                     {{ form.serving_unit }}
-                    {% if form.serving_unit.errors %}<div class="text-danger small">{{ form.serving_unit.errors.0 }}</div>{% endif %}
+                    {% if form.serving_unit.errors %}<div class="text-danger small mt-1">{{ form.serving_unit.errors.0 }}</div>{% endif %}
                 </div>
 
-                <!-- Macronutrient values -->
+                <!-- Calculated Nutrition Contribution -->
+                <div class="col-12 mt-3 pt-2 border-top">
+                    <span class="small fw-bold text-navy d-block mb-2">
+                        Calculated Nutritional Contribution (<code>Nutrition = Base Per Serving × Quantity</code>):
+                    </span>
+                </div>
+
                 <div class="col-md-3 col-6">
                     <label class="form-label small fw-bold text-navy">Calories (kcal) *</label>
                     {{ form.calories }}
-                    {% if form.calories.errors %}<div class="text-danger small">{{ form.calories.errors.0 }}</div>{% endif %}
+                    {% if form.calories.errors %}<div class="text-danger small mt-1">{{ form.calories.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-3 col-6">
                     <label class="form-label small fw-bold text-teal" style="color: #14B8A6;">Protein (g)</label>
                     {{ form.protein }}
-                    {% if form.protein.errors %}<div class="text-danger small">{{ form.protein.errors.0 }}</div>{% endif %}
+                    {% if form.protein.errors %}<div class="text-danger small mt-1">{{ form.protein.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-3 col-6">
                     <label class="form-label small fw-bold text-navy">Carbs (g)</label>
                     {{ form.carbohydrates }}
-                    {% if form.carbohydrates.errors %}<div class="text-danger small">{{ form.carbohydrates.errors.0 }}</div>{% endif %}
+                    {% if form.carbohydrates.errors %}<div class="text-danger small mt-1">{{ form.carbohydrates.errors.0 }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-3 col-6">
                     <label class="form-label small fw-bold text-lime" style="color: #84CC16;">Fat (g)</label>
                     {{ form.fat }}
-                    {% if form.fat.errors %}<div class="text-danger small">{{ form.fat.errors.0 }}</div>{% endif %}
+                    {% if form.fat.errors %}<div class="text-danger small mt-1">{{ form.fat.errors.0 }}</div>{% endif %}
                 </div>
             </div>
 
@@ -124,8 +143,10 @@
     const searchStatus = document.getElementById('searchStatus');
     const searchResults = document.getElementById('searchResultsList');
 
+    const foodIdInput = document.getElementById('selectedFoodId');
     const foodNameInput = document.getElementById('id_food_name');
     const brandInput = document.getElementById('id_brand');
+    const quantityInput = document.getElementById('id_quantity');
     const servingAmountInput = document.getElementById('id_serving_amount');
     const servingUnitInput = document.getElementById('id_serving_unit');
     const caloriesInput = document.getElementById('id_calories');
@@ -139,16 +160,16 @@
             if (!query) return;
 
             searchStatus.classList.remove('d-none');
-            searchStatus.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Searching verified nutrition database...';
+            searchStatus.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Searching food database...';
             searchResults.innerHTML = '';
             searchResults.classList.add('d-none');
 
             fetch(`/nutrition/api/search/?q=${encodeURIComponent(query)}`)
                 .then(res => res.json())
                 .then(data => {
-                    searchStatus.innerHTML = data.message || `Found ${data.items.length} results`;
+                    searchStatus.innerHTML = data.message || `Found ${data.items.length} items`;
                     if (data.is_fallback) {
-                        searchStatus.innerHTML += ' <span class="badge bg-warning-subtle text-warning border ms-1">Fallback Mode</span>';
+                        searchStatus.innerHTML += ' <span class="badge bg-warning-subtle text-warning border ms-1">Offline Fallback</span>';
                     }
                     searchResults.innerHTML = '';
 
@@ -157,13 +178,15 @@
                             const btn = document.createElement('button');
                             btn.type = 'button';
                             btn.className = 'list-group-item list-group-item-action py-2';
+                            const desc = item.serving_description ? ` (${item.serving_description})` : ` (${item.serving_size}${item.serving_unit})`;
                             btn.innerHTML = `
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <strong>${item.name}</strong> ${item.brand ? `<span class="text-muted small">(${item.brand})</span>` : ''}
-                                        <div class="small text-muted">Per ${item.serving_size}${item.serving_unit}: ${item.calories} kcal | P: ${item.protein}g | C: ${item.carbohydrates}g | F: ${item.fat}g</div>
+                                        <div class="small text-muted">Per ${desc}: <strong class="text-dark">${item.calories} kcal</strong> | P: ${item.protein}g | C: ${item.carbohydrates}g | F: ${item.fat}g</div>
+                                        <div class="small text-muted" style="font-size: 0.72rem;"><i class="bi bi-database me-1"></i> ${item.source}</div>
                                     </div>
-                                    <span class="badge bg-teal-subtle text-teal border" style="color: #14B8A6;">Select</span>
+                                    <span class="badge bg-teal-subtle text-teal border py-1 px-2" style="color: #14B8A6;">Select</span>
                                 </div>
                             `;
                             btn.onclick = () => selectFoodItem(item);
@@ -171,12 +194,12 @@
                         });
                         searchResults.classList.remove('d-none');
                     } else {
-                        searchResults.innerHTML = '<div class="list-group-item text-muted small">No verified foods matched. You can manually enter values below!</div>';
+                        searchResults.innerHTML = '<div class="list-group-item text-muted small">No foods matched. You can manually enter nutrition values below!</div>';
                         searchResults.classList.remove('d-none');
                     }
                 })
                 .catch(err => {
-                    searchStatus.innerHTML = '<span class="text-danger">Search error. You can manually enter values below.</span>';
+                    searchStatus.innerHTML = '<span class="text-danger">Search error. You can manually enter nutrition below.</span>';
                 });
         }
 
@@ -190,6 +213,7 @@
     }
 
     function selectFoodItem(item) {
+        if (foodIdInput && item.id) foodIdInput.value = item.id;
         foodNameInput.value = item.name;
         brandInput.value = item.brand || '';
         servingUnitInput.value = item.serving_unit || 'g';
@@ -201,19 +225,21 @@
         baseFat = parseFloat(item.fat) || 0;
         hasReferenceData = true;
 
-        // Default serving amount
+        if (quantityInput) quantityInput.value = '1.0';
         servingAmountInput.value = referenceServing;
         calculateServingNutrition();
 
-        // Hide search results
         if (searchResults) searchResults.classList.add('d-none');
-        if (searchStatus) searchStatus.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i> Loaded "${item.name}". Adjust serving amount as needed!</span>`;
+        if (searchStatus) searchStatus.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i> Selected "<strong>${item.name}</strong>". Adjust portion quantity or serving amount as needed!</span>`;
     }
 
     function calculateServingNutrition() {
         if (!hasReferenceData || referenceServing <= 0) return;
         const currentAmount = parseFloat(servingAmountInput.value) || 0;
-        const ratio = currentAmount / referenceServing;
+        const currentQty = quantityInput ? (parseFloat(quantityInput.value) || 1.0) : 1.0;
+        
+        // entry nutrition = nutrition per serving × quantity × (serving_amount / base_serving)
+        const ratio = (currentAmount / referenceServing) * currentQty;
 
         caloriesInput.value = (baseCals * ratio).toFixed(2);
         proteinInput.value = (baseProtein * ratio).toFixed(2);
@@ -221,8 +247,7 @@
         fatInput.value = (baseFat * ratio).toFixed(2);
     }
 
-    if (servingAmountInput) {
-        servingAmountInput.addEventListener('input', calculateServingNutrition);
-    }
+    if (servingAmountInput) servingAmountInput.addEventListener('input', calculateServingNutrition);
+    if (quantityInput) quantityInput.addEventListener('input', calculateServingNutrition);
 </script>
 {% endblock %}

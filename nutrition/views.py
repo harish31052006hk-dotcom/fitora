@@ -8,20 +8,48 @@ from .api_client import NutritionAPIClient
 
 def search_foods_api(request):
     """
-    JSON API endpoint for food search.
-    Provides external API results with database fallback.
+    JSON API endpoint for food search supporting case-insensitive partial matching.
+    Searches the existing PostgreSQL food database and external nutrition service.
     """
-    query = request.GET.get('q', '').strip()
+    query = (request.GET.get('query') or request.GET.get('q') or '').strip()
+    if not query:
+        return JsonResponse({
+            'success': True,
+            'source': 'empty',
+            'message': 'Please enter a search query.',
+            'items': [],
+            'results': []
+        })
+
     client = NutritionAPIClient()
     result = client.search_food(query, user=request.user)
-    
-    # Format items for JSON response
-    formatted_items = []
+
+    # Fetch matching PostgreSQL database items
+    db_items = client._fetch_from_database(query, user=request.user)
+
+    # Combine items giving priority to PostgreSQL database records
+    seen_keys = set()
+    combined_items = []
+
+    for item in db_items:
+        key = (item.get('name', '').strip().lower(), item.get('brand', '').strip().lower())
+        if key not in seen_keys:
+            seen_keys.add(key)
+            combined_items.append(item)
+
     for item in result.get('items', []):
+        key = (item.get('name', '').strip().lower(), item.get('brand', '').strip().lower())
+        if key not in seen_keys:
+            seen_keys.add(key)
+            combined_items.append(item)
+
+    formatted_items = []
+    for item in combined_items:
         formatted_items.append({
             'id': item.get('id'),
             'name': item.get('name'),
             'brand': item.get('brand', ''),
+            'serving_description': item.get('serving_description', ''),
             'serving_size': float(item.get('serving_size', 100)),
             'serving_unit': item.get('serving_unit', 'g'),
             'calories': float(item.get('calories', 0)),
@@ -33,11 +61,12 @@ def search_foods_api(request):
         })
 
     return JsonResponse({
-        'success': result.get('success', True),
-        'source': result.get('source', 'api'),
-        'message': result.get('message', ''),
+        'success': True,
+        'source': 'database' if db_items else result.get('source', 'api'),
+        'message': f"Found {len(formatted_items)} matching foods in database.",
         'is_fallback': result.get('is_fallback', False),
-        'items': formatted_items
+        'items': formatted_items,
+        'results': formatted_items
     })
 
 @login_required
@@ -53,6 +82,7 @@ def custom_foods_view(request):
             food = form.save(commit=False)
             food.created_by = request.user
             food.is_verified = False
+            food.data_source = 'Custom User Food'
             food.save()
             messages.success(request, f"'{food.name}' was saved to your custom foods!")
             return redirect('custom_foods')

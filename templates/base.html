@@ -51,8 +51,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-link-fitora {% if request.GET.tab == 'favorites' %}active{% endif %}" href="{% url 'recipe_list' %}?tab=favorites">
-                                <i class="bi bi-heart-fill text-danger"></i> My Meals
+                            <a class="nav-link nav-link-fitora {% if 'saved-meals' in request.path %}active{% endif %}" href="{% url 'saved_meals_list' %}">
+                                <i class="bi bi-bookmark-heart text-danger"></i> Saved Meals
                             </a>
                         </li>
                         <li class="nav-item">

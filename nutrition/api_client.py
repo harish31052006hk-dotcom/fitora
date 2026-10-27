@@ -145,13 +145,14 @@ class NutritionAPIClient:
                 'id': item.id,
                 'name': item.name,
                 'brand': item.brand,
+                'serving_description': getattr(item, 'serving_description', ''),
                 'serving_size': item.serving_size,
                 'serving_unit': item.serving_unit,
                 'calories': item.calories,
                 'protein': item.protein,
                 'carbohydrates': item.carbohydrates,
                 'fat': item.fat,
-                'source': 'Fitora Verified Database' if item.is_verified else 'Custom Food',
+                'source': getattr(item, 'data_source', 'Fitora Verified Database'),
                 'is_verified': item.is_verified
             })
         return results
