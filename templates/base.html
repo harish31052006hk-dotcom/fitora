@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} — {% endif %}Fitora</title>
+    <meta name="description" content="Fitora — AI-Powered Fitness and Nutrition Tracker. Calorie tracking, food diary, recipe manager, and AI nutrition assistant.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <!-- Fitora Custom Styles -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-fitora">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-logo" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">
+                <i class="bi bi-activity text-teal" style="color: #14B8A6;"></i>
+                <span>FITORA</span>
+                <span class="brand-badge">PRO</span>
+            </a>
+
+            <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#fitoraNav" aria-controls="fitoraNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-2"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="fitoraNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'diary' in request.path %}active{% endif %}" href="{% url 'food_diary' %}">
+                                <i class="bi bi-journal-bookmark"></i> Food Diary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if request.GET.tab == 'favorites' %}active{% endif %}" href="{% url 'recipe_list' %}?tab=favorites">
+                                <i class="bi bi-heart-fill text-danger"></i> My Meals
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'recipes' in request.path and request.GET.tab != 'favorites' %}active{% endif %}" href="{% url 'recipe_list' %}">
+                                <i class="bi bi-egg-fried"></i> Recipes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'progress' in request.path %}active{% endif %}" href="{% url 'progress' %}">
+                                <i class="bi bi-graph-up-arrow"></i> Progress
+                            </a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-fitora {% if 'faq' in request.path %}active{% endif %}" href="{% url 'faq' %}">
+                            <i class="bi bi-question-circle"></i> FAQ & Help
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-fitora {% if 'assistant' in request.path %}active{% endif %}" href="{% url 'assistant_page' %}">
+                            <i class="bi bi-stars" style="color: #A3E635;"></i> Ask AI
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- User Account Actions -->
+                <div class="d-flex align-items-center gap-2">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="fw-semibold">{{ user.username }}</span>
+                        </a>
+                        <a href="{% url 'logout' %}" class="btn btn-sm btn-fitora-outline text-white border-white-50 px-3 py-2 rounded-pill">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-sm text-white px-3 py-2 fw-semibold">Sign In</a>
+                        <a href="{% url 'register' %}" class="btn btn-fitora-lime btn-sm px-4 py-2">Get Started</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Alerts Container -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                        {% endif %}
+                        <div>{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating "Ask Fitora AI" Trigger Button -->
+    <a href="#" id="fitoraAiTrigger" class="floating-ai-trigger" aria-label="Open Fitora AI Assistant">
+        <span class="floating-ai-pulse"></span>
+        <i class="bi bi-stars fs-5" style="color: #A3E635;"></i>
+        <span>Ask Fitora AI</span>
+    </a>
+
+    <!-- Floating Chat Modal Window -->
+    <div id="fitoraChatWindow" class="chat-window d-none" style="display: none;">
+        <div class="chat-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-robot text-lime fs-5" style="color: #A3E635;"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold">Fitora AI Assistant</h6>
+                    <small class="text-white-50" style="font-size: 0.75rem;">Verified FAQ & Nutrition Intelligence</small>
+                </div>
+            </div>
+            <button id="chatCloseBtn" class="btn btn-sm text-white p-0" aria-label="Close Chat">
+                <i class="bi bi-x-lg fs-5"></i>
+            </button>
+        </div>
+
+        <div id="chatMessages" class="chat-body">
+            <!-- Welcome message -->
+            <div class="chat-bubble chat-bubble-ai">
+                <div class="fw-bold text-navy mb-1">Hi {% if user.is_authenticated %}{{ user.username }}{% else %}there{% endif %}! 👋</div>
+                I'm your Fitora AI Assistant. I can answer questions about your calorie goals, guide you through the food diary, explain error codes, or open a support ticket.
+                <div class="mt-2 pt-2 border-top">
+                    <span class="small fw-semibold text-muted d-block mb-1">Quick Suggestions:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% if user.is_authenticated %}
+                            <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-0 px-2" data-prompt="My calories today" style="font-size: 0.75rem;">My calories today</button>
+                        {% endif %}
+                        <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-0 px-2" data-prompt="How do I add food to my diary?" style="font-size: 0.75rem;">Add food to diary</button>
+                        <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-0 px-2" data-prompt="Explain HTTP 429" style="font-size: 0.75rem;">Explain 429 error</button>
+                        <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-0 px-2" data-prompt="What is error code APP-001?" style="font-size: 0.75rem;">What is APP-001?</button>
+                        <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-0 px-2" data-prompt="Create a support ticket" style="font-size: 0.75rem;">Open support ticket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <div class="input-group">
+                <input type="text" id="chatInput" class="form-control border-end-0" placeholder="Ask about foods, calories, errors..." maxlength="1000">
+                <button id="chatSendBtn" class="btn btn-fitora-primary px-3" type="button" aria-label="Send Message">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+                <small class="text-muted" style="font-size: 0.7rem;">Powered by Fitora Knowledge Base & MongoDB</small>
+                <a href="{% url 'error_guide' %}" class="text-decoration-none text-muted" style="font-size: 0.7rem;">Error Codes</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer-fitora">
+        <div class="container">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-activity text-teal fs-4" style="color: #14B8A6;"></i>
+                        <span class="fs-4 fw-bold text-white brand-font">FITORA</span>
+                    </div>
+                    <p class="text-white-50 mb-3 small">
+                        Your Goals. Your Journey. Your Fit. Advanced fitness and nutrition tracking platform combining calorie intelligence, macro targets, recipe planning, and AI assistance.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-secondary-subtle text-light border border-secondary-subtle">PostgreSQL</span>
+                        <span class="badge bg-secondary-subtle text-light border border-secondary-subtle">MongoDB Atlas</span>
+                        <span class="badge bg-secondary-subtle text-light border border-secondary-subtle">Django 6.1</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white fw-bold mb-3">Platform</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small">
+                        <li><a href="{% url 'dashboard' %}" class="footer-link">Dashboard</a></li>
+                        <li><a href="{% url 'food_diary' %}" class="footer-link">Food Diary</a></li>
+                        <li><a href="{% url 'recipe_list' %}" class="footer-link">Recipes & Meals</a></li>
+                        <li><a href="{% url 'progress' %}" class="footer-link">Progress Trends</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="text-white fw-bold mb-3">Support & Docs</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small">
+                        <li><a href="{% url 'faq' %}" class="footer-link">FAQ Knowledge Base</a></li>
+                        <li><a href="{% url 'error_guide' %}" class="footer-link">Error Code Guide (8 Codes)</a></li>
+                        <li><a href="{% url 'support_tickets' %}" class="footer-link">Support Desk & Tickets</a></li>
+                        <li><a href="{% url 'root_health_check' %}" class="footer-link" target="_blank">Health Check API (/health/)</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="text-white fw-bold mb-3">Academic Project</h6>
+                    <p class="text-white-50 small mb-2">
+                        Software Development Final Assessment. Built from scratch with full-stack Django backend, relational & NoSQL databases, and automated test suite.
+                    </p>
+                    <div class="alert alert-dark py-2 px-3 small border-0 text-white-50 mb-0">
+                        <i class="bi bi-shield-check text-lime me-1" style="color: #A3E635;"></i> Non-medical tracking platform.
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-top border-secondary-subtle pt-3 d-flex flex-wrap justify-content-between align-items-center text-white-50 small">
+                <div>&copy; {{ CURRENT_YEAR }} Fitora. All rights reserved.</div>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'error_guide' %}" class="footer-link">Error Guide</a>
+                    <a href="{% url 'faq' %}" class="footer-link">FAQs</a>
+                    <a href="{% url 'root_health_check' %}" class="footer-link">System Health</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Fitora AI Chat JS -->
+    <script src="{% static 'js/chat.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

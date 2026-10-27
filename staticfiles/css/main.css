@@ -1,0 +1,430 @@
+/* ==========================================================================
+   FITORA — Premium Modern Fitness & Nutrition Tracker Styling
+   Brand Palette:
+   Deep Navy: #142B3B
+   Teal: #14B8A6
+   Lime Green: #A3E635
+   White: #FFFFFF
+   Light Background: #F7F9FC
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --fitora-navy: #142B3B;
+  --fitora-navy-dark: #0D1E2A;
+  --fitora-navy-light: #1E3D52;
+  --fitora-teal: #14B8A6;
+  --fitora-teal-hover: #0D9488;
+  --fitora-teal-light: #CCFBF1;
+  --fitora-lime: #A3E635;
+  --fitora-lime-hover: #84CC16;
+  --fitora-lime-light: #ECFCCB;
+  --fitora-bg: #F7F9FC;
+  --fitora-card-bg: #FFFFFF;
+  --fitora-text-main: #1E293B;
+  --fitora-text-muted: #64748B;
+  --fitora-border: #E2E8F0;
+  --fitora-shadow-sm: 0 1px 3px rgba(20, 43, 59, 0.06);
+  --fitora-shadow: 0 4px 20px -2px rgba(20, 43, 59, 0.08);
+  --fitora-shadow-lg: 0 10px 30px -4px rgba(20, 43, 59, 0.12);
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--fitora-bg);
+  color: var(--fitora-text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .brand-font {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Navbar */
+.navbar-fitora {
+  background: var(--fitora-navy);
+  box-shadow: 0 2px 16px rgba(13, 30, 42, 0.15);
+  padding: 0.85rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+.navbar-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #FFFFFF !important;
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+
+.brand-badge {
+  background: linear-gradient(135deg, var(--fitora-teal), var(--fitora-lime));
+  color: var(--fitora-navy);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  text-transform: uppercase;
+}
+
+.nav-link-fitora {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.85rem !important;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-link-fitora:hover,
+.nav-link-fitora.active {
+  color: var(--fitora-lime) !important;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Buttons */
+.btn-fitora-primary {
+  background: linear-gradient(135deg, var(--fitora-teal), #0D9488);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.65rem;
+  padding: 0.65rem 1.4rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
+}
+
+.btn-fitora-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(20, 184, 166, 0.35);
+  background: linear-gradient(135deg, #0D9488, #0F766E);
+}
+
+.btn-fitora-lime {
+  background: linear-gradient(135deg, var(--fitora-lime), #84CC16);
+  color: var(--fitora-navy) !important;
+  font-weight: 700;
+  border: none;
+  border-radius: 0.65rem;
+  padding: 0.65rem 1.4rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(163, 230, 53, 0.3);
+}
+
+.btn-fitora-lime:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(163, 230, 53, 0.4);
+  background: linear-gradient(135deg, #84CC16, #65A30D);
+}
+
+.btn-fitora-outline {
+  border: 1.5px solid var(--fitora-teal);
+  color: var(--fitora-teal) !important;
+  font-weight: 600;
+  border-radius: 0.65rem;
+  padding: 0.6rem 1.3rem;
+  background: transparent;
+  transition: all 0.25s ease;
+}
+
+.btn-fitora-outline:hover {
+  background-color: var(--fitora-teal);
+  color: #FFFFFF !important;
+}
+
+/* Cards */
+.fitora-card {
+  background: var(--fitora-card-bg);
+  border: 1px solid var(--fitora-border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--fitora-shadow);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fitora-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--fitora-shadow-lg);
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, var(--fitora-navy) 0%, #17384E 100%);
+  color: #FFFFFF;
+  padding: 4.5rem 0 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-tagline {
+  color: var(--fitora-lime);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero-title {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
+}
+
+.hero-image-wrapper {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-image-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.hero-image-wrapper:hover img {
+  transform: scale(1.02);
+}
+
+/* Metric / Stat Ring Cards */
+.metric-box {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  border: 1px solid var(--fitora-border);
+  box-shadow: var(--fitora-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fitora-text-muted);
+}
+
+.metric-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--fitora-navy);
+}
+
+.progress-fitora {
+  height: 8px;
+  border-radius: 999px;
+  background-color: #E2E8F0;
+  overflow: hidden;
+}
+
+.progress-bar-teal {
+  background: linear-gradient(90deg, var(--fitora-teal), #0D9488);
+}
+
+.progress-bar-lime {
+  background: linear-gradient(90deg, var(--fitora-lime), #84CC16);
+}
+
+.progress-bar-navy {
+  background: linear-gradient(90deg, var(--fitora-navy), var(--fitora-navy-light));
+}
+
+/* Meal Section Header */
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #F1F5F9;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  color: var(--fitora-navy);
+}
+
+/* Floating AI Chat Widget */
+.floating-ai-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1040;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--fitora-navy), var(--fitora-teal));
+  color: #FFFFFF !important;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.35rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(20, 43, 59, 0.3);
+  cursor: pointer;
+  border: 2px solid rgba(163, 230, 53, 0.6);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.floating-ai-trigger:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(20, 43, 59, 0.4);
+  color: var(--fitora-lime) !important;
+}
+
+.floating-ai-pulse {
+  width: 10px;
+  height: 10px;
+  background-color: var(--fitora-lime);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(163, 230, 53, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(163, 230, 53, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
+}
+
+/* Chat Modal / Off-canvas */
+.chat-window {
+  position: fixed;
+  bottom: 85px;
+  right: 24px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  height: 600px;
+  max-height: calc(100vh - 120px);
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 40px rgba(13, 30, 42, 0.25);
+  border: 1px solid var(--fitora-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 1050;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chat-header {
+  background: var(--fitora-navy);
+  color: #FFFFFF;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.chat-bubble-user {
+  background: var(--fitora-navy);
+  color: #FFFFFF;
+  align-self: flex-end;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.chat-bubble-ai {
+  background: #FFFFFF;
+  color: var(--fitora-text-main);
+  align-self: flex-start;
+  border-bottom-left-radius: 0.25rem;
+  border: 1px solid var(--fitora-border);
+  box-shadow: var(--fitora-shadow-sm);
+}
+
+.chat-footer {
+  padding: 0.75rem 1rem;
+  background: #FFFFFF;
+  border-top: 1px solid var(--fitora-border);
+}
+
+/* Badges */
+.badge-category {
+  background-color: var(--fitora-teal-light);
+  color: var(--fitora-teal-hover);
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+}
+
+/* Footer */
+.footer-fitora {
+  background: var(--fitora-navy-dark);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 3rem 0 1.5rem;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: var(--fitora-lime);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.2rem;
+  }
+  .chat-window {
+    right: 16px;
+    bottom: 75px;
+    width: calc(100vw - 32px);
+    height: 520px;
+  }
+}

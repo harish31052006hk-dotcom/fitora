@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4 max-w-700">
+    <div class="fitora-card">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <a href="{% url 'support_tickets' %}" class="text-teal text-decoration-none small fw-semibold">&larr; Back to Tickets</a>
+                <h4 class="fw-bold text-navy mt-1 mb-0">Ticket {{ ticket.ticket_id }}</h4>
+            </div>
+            <span class="badge {% if ticket.status == 'Open' %}bg-warning-subtle text-warning border border-warning-subtle{% elif ticket.status == 'In Progress' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %} fs-6 py-1 px-3">
+                {{ ticket.status }}
+            </span>
+        </div>
+
+        <div class="mb-3">
+            <span class="text-muted small fw-bold text-uppercase d-block">Subject</span>
+            <h5 class="fw-bold text-navy">{{ ticket.subject }}</h5>
+        </div>
+
+        <div class="row g-2 mb-3 small text-muted">
+            <div class="col-sm-4"><strong>Category:</strong> {{ ticket.category }}</div>
+            <div class="col-sm-4"><strong>Contact:</strong> {{ ticket.contact_email }}</div>
+            <div class="col-sm-4"><strong>Submitted:</strong> {{ ticket.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+
+        <div class="p-3 rounded-3 bg-light mb-4">
+            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Description:</span>
+            <p class="mb-0 text-dark" style="white-space: pre-wrap;">{{ ticket.description }}</p>
+        </div>
+
+        <div class="alert alert-success border-0 small mb-0">
+            <i class="bi bi-clock-history me-1"></i> Our engineering and support team reviews tickets continuously. Status updates will be communicated to your contact email.
+        </div>
+    </div>
+</div>
+{% endblock %}

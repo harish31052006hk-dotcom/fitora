@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Non-Medical Advisory Notice -->
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-4 rounded-3 border-0 shadow-sm" style="background-color: #E0F2FE; color: #0369A1;">
+        <i class="bi bi-shield-check fs-4"></i>
+        <div class="small">
+            <strong>Fitora Advisory:</strong> Progress metrics, calorie balances, and weight tracking are intended solely for personal wellness and fitness organization. Fitora does not provide clinical or medical diagnoses.
+        </div>
+    </div>
+
+    <!-- Header & Weight Logging Form -->
+    <div class="row g-4 mb-4">
+        <!-- Progress Summary Cards -->
+        <div class="col-lg-8">
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <div class="fitora-card h-100">
+                        <span class="metric-label">Current Weight</span>
+                        <div class="metric-value mt-1">
+                            {% if profile.current_weight %}{{ profile.current_weight }} <span class="fs-6 text-muted fw-normal">kg</span>{% else %}<span class="fs-5 text-muted">Not Set</span>{% endif %}
+                        </div>
+                        <small class="text-muted">Most recent log</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="fitora-card h-100">
+                        <span class="metric-label">Target Goal</span>
+                        <div class="metric-value text-teal mt-1" style="color: #14B8A6;">
+                            {% if profile.target_weight %}{{ profile.target_weight }} <span class="fs-6 text-muted fw-normal">kg</span>{% else %}<span class="fs-5 text-muted">Not Set</span>{% endif %}
+                        </div>
+                        <small class="text-muted"><a href="{% url 'profile' %}" class="text-teal text-decoration-none">Edit Target</a></small>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="fitora-card h-100">
+                        <span class="metric-label">7-Day Calorie Avg</span>
+                        <div class="metric-value mt-1">{{ avg_calories }} <span class="fs-6 text-muted fw-normal">kcal</span></div>
+                        <small class="text-muted">{{ active_days }} active day{{ active_days|pluralize }} this week</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Weight Line Chart -->
+            <div class="fitora-card mt-3">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-graph-up text-teal me-1" style="color: #14B8A6;"></i> Weight History Trend (kg)</h5>
+                <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="weightHistoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Weight Form & Recent Logs -->
+        <div class="col-lg-4">
+            <div class="fitora-card mb-3">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-speedometer2 text-lime me-1" style="color: #84CC16;"></i> Log Weight Measurement</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Date</label>
+                        {{ form.date }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Weight (kg) *</label>
+                        {{ form.weight }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Notes (Optional)</label>
+                        {{ form.notes }}
+                    </div>
+                    <button type="submit" class="btn btn-fitora-primary w-100">
+                        <i class="bi bi-save me-1"></i> Save Weight Entry
+                    </button>
+                </form>
+            </div>
+
+            <!-- Recent Weight Table -->
+            <div class="fitora-card p-3">
+                <h6 class="fw-bold text-navy mb-2 small text-uppercase">Recent Weigh-Ins</h6>
+                {% if weight_logs %}
+                    <ul class="list-unstyled mb-0 small">
+                        {% for log in weight_logs %}
+                            <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <strong class="text-navy">{{ log.weight }} kg</strong>
+                                    <small class="text-muted d-block">{{ log.date|date:"M d, Y" }}</small>
+                                </div>
+                                <form method="post" action="{% url 'delete_weight' log.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-light text-danger py-0 px-2" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted small mb-0">No weight records logged yet. Enter your measurement above.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row: Calorie Balance & Macro Distribution -->
+    <div class="row g-4">
+        <!-- 7-Day Calorie Trends -->
+        <div class="col-lg-7">
+            <div class="fitora-card h-100">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-bar-chart-fill text-teal me-1" style="color: #14B8A6;"></i> Weekly Calorie Balance vs Goal</h5>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="progressCalorieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Macro Distribution Doughnut Chart -->
+        <div class="col-lg-5">
+            <div class="fitora-card h-100">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-pie-chart-fill text-lime me-1" style="color: #84CC16;"></i> Weekly Macronutrient Split</h5>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="macroDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 1. Weight History Line Chart
+    const weightLabels = {{ chart_weight_labels_json|safe }};
+    const weightValues = {{ chart_weight_values_json|safe }};
+    const targetWeight = {{ target_weight_value|default:"null" }};
+
+    const weightDatasets = [{
+        label: 'Weight (kg)',
+        data: weightValues,
+        borderColor: '#14B8A6',
+        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#142B3B',
+        pointRadius: 4
+    }];
+
+    if (targetWeight !== null && weightLabels.length > 0) {
+        weightDatasets.push({
+            label: `Goal Target (${targetWeight} kg)`,
+            data: Array(weightLabels.length).fill(targetWeight),
+            borderColor: '#84CC16',
+            borderDash: [6, 6],
+            pointRadius: 0,
+            fill: false
+        });
+    }
+
+    new Chart(document.getElementById('weightHistoryChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: weightLabels.length > 0 ? weightLabels : ['No logs yet'],
+            datasets: weightDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { grid: { color: '#F1F5F9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Weekly Calorie vs Goal Chart
+    const calLabels = {{ chart_cal_labels_json|safe }};
+    const calValues = {{ chart_cal_values_json|safe }};
+    const goalValues = {{ chart_goal_values_json|safe }};
+
+    new Chart(document.getElementById('progressCalorieChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: calLabels,
+            datasets: [
+                {
+                    label: 'Consumed (kcal)',
+                    data: calValues,
+                    backgroundColor: '#14B8A6',
+                    borderRadius: 6
+                },
+                {
+                    label: 'Calorie Goal',
+                    data: goalValues,
+                    type: 'line',
+                    borderColor: '#64748B',
+                    borderDash: [5, 5],
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 3. Macronutrient Doughnut Chart
+    const macroData = {{ chart_macro_json|safe }};
+    const hasMacros = (macroData.protein + macroData.carbs + macroData.fat) > 0;
+
+    new Chart(document.getElementById('macroDistributionChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Protein (g)', 'Carbohydrates (g)', 'Fat (g)'],
+            datasets: [{
+                data: hasMacros ? [macroData.protein, macroData.carbs, macroData.fat] : [1, 1, 1],
+                backgroundColor: hasMacros ? ['#14B8A6', '#142B3B', '#A3E635'] : ['#E2E8F0', '#E2E8F0', '#E2E8F0']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

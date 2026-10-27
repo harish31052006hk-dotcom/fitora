@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">{{ title }}</h2>
+            <p class="text-muted mb-0">Submit technical inquiries, nutrition questions, or track ongoing support tickets.</p>
+        </div>
+        <a href="{% url 'faq' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-question-circle me-1"></i> Browse FAQs First
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Ticket Submission Form -->
+        <div class="col-lg-5">
+            <div class="fitora-card">
+                <h5 class="fw-bold text-navy mb-3"><i class="bi bi-pencil-square text-teal me-1" style="color: #14B8A6;"></i> Open a Support Ticket</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Subject *</label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}<div class="text-danger small">{{ form.subject.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Category *</label>
+                        {{ form.category }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description & Details *</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Contact Email {% if not user.is_authenticated %}*{% endif %}</label>
+                        {{ form.contact_email }}
+                        {% if form.contact_email.errors %}<div class="text-danger small">{{ form.contact_email.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-fitora-primary w-100 py-2">
+                        <i class="bi bi-send-fill me-1"></i> Submit Support Request
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- User's Existing Support Tickets -->
+        <div class="col-lg-7">
+            <div class="fitora-card h-100">
+                <h5 class="fw-bold text-navy mb-3 d-flex justify-content-between align-items-center">
+                    <span>My Tracked Tickets</span>
+                    {% if user.is_authenticated %}
+                        <span class="badge bg-light text-muted border">{{ user_tickets.count }}</span>
+                    {% endif %}
+                </h5>
+
+                {% if user.is_authenticated %}
+                    {% if user_tickets %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Ticket ID</th>
+                                        <th>Subject</th>
+                                        <th>Category</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for t in user_tickets %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'ticket_detail' t.ticket_id %}" class="fw-bold text-teal text-decoration-none font-monospace">
+                                                    {{ t.ticket_id }}
+                                                </a>
+                                            </td>
+                                            <td class="text-navy fw-semibold">{{ t.subject|truncatewords:6 }}</td>
+                                            <td><span class="badge bg-light text-secondary border small">{{ t.category }}</span></td>
+                                            <td>
+                                                <span class="badge {% if t.status == 'Open' %}bg-warning-subtle text-warning border border-warning-subtle{% elif t.status == 'In Progress' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-success-subtle text-success border border-success-subtle{% endif %}">
+                                                    {{ t.status }}
+                                                </span>
+                                            </td>
+                                            <td class="small text-muted">{{ t.created_at|date:"M d, Y" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-ticket-perforated fs-1 text-muted mb-2"></i>
+                            <h6 class="fw-bold text-navy">No tickets opened</h6>
+                            <p class="small text-muted mb-0">You do not have any active support tickets. Submit one using the form on the left if you need assistance!</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-light border p-4 text-center">
+                        <i class="bi bi-lock-fill text-muted fs-3 mb-2 d-block"></i>
+                        <h6 class="fw-bold text-navy">Sign In to Track Tickets</h6>
+                        <p class="text-muted small mb-3">You can submit a ticket as a guest above with your email, or sign in to track all your previous tickets in one place.</p>
+                        <a href="{% url 'login' %}?next={% url 'support_tickets' %}" class="btn btn-fitora-primary btn-sm px-4">Sign In Now</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

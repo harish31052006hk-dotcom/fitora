@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5 text-center max-w-600">
+    <div class="fitora-card py-5 px-4 shadow-lg" style="border-top: 4px solid #EF4444;">
+        <div class="d-inline-flex p-3 rounded-circle bg-danger-subtle text-danger mb-3">
+            <i class="bi bi-exclamation-octagon fs-1"></i>
+        </div>
+        <h1 class="display-4 fw-bold text-navy mb-2">500</h1>
+        <h3 class="fw-bold text-navy mb-3">Internal Server Error</h3>
+        <p class="text-muted mb-4">
+            Something unexpected occurred on our server while processing your request. Our automated monitoring has recorded this event and our engineering team will investigate.
+        </p>
+
+        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
+            <a href="{% url 'home' %}" class="btn btn-fitora-primary px-4">
+                <i class="bi bi-house-door me-1"></i> Return to Homepage
+            </a>
+            <a href="{% url 'support_tickets' %}" class="btn btn-outline-secondary px-4">
+                <i class="bi bi-ticket-perforated me-1"></i> Report an Issue
+            </a>
+        </div>
+
+        <div class="p-3 rounded-3 bg-light d-flex justify-content-between align-items-center text-start">
+            <div>
+                <strong class="text-navy d-block">Need immediate help?</strong>
+                <span class="text-muted small">Ask Fitora AI to file a support ticket for you.</span>
+            </div>
+            <button class="btn btn-fitora-lime btn-sm px-3 quick-prompt-btn" data-prompt="I encountered a 500 error on the server, please create a support ticket.">
+                <i class="bi bi-stars me-1"></i> Ask AI
+            </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-top small text-muted">
+            Read more in our <a href="{% url 'error_guide' %}#code-500" class="text-teal text-decoration-none">HTTP 500 Error Documentation</a>.
+        </div>
+    </div>
+</div>
+{% endblock %}

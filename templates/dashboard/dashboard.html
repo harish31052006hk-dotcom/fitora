@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Welcome Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-navy mb-1">Welcome back, {{ user.first_name|default:user.username }}! 👋</h2>
+            <p class="text-muted mb-0">Here is your daily nutrition summary for <strong>{{ today|date:"l, F d, Y" }}</strong>.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'food_diary' %}" class="btn btn-fitora-primary">
+                <i class="bi bi-journal-plus me-1"></i> Open Food Diary
+            </a>
+            <a href="{% url 'profile' %}" class="btn btn-fitora-outline" title="Edit Goals">
+                <i class="bi bi-gear-fill me-1"></i> Edit Goals
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Metric Cards: Energy Balance -->
+    <div class="row g-3 mb-4">
+        <!-- Daily Goal -->
+        <div class="col-md-4 col-sm-6">
+            <div class="fitora-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="metric-label">Daily Goal</span>
+                    <i class="bi bi-bullseye text-teal fs-4" style="color: #14B8A6;"></i>
+                </div>
+                <div class="metric-value">{{ calorie_goal }} <span class="fs-6 text-muted fw-normal">kcal</span></div>
+                <small class="text-muted">Target energy allowance</small>
+            </div>
+        </div>
+
+        <!-- Calories Consumed -->
+        <div class="col-md-4 col-sm-6">
+            <div class="fitora-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="metric-label">Calories Consumed</span>
+                    <i class="bi bi-fire text-danger fs-4"></i>
+                </div>
+                <div class="metric-value text-danger">{{ calories_consumed }} <span class="fs-6 text-muted fw-normal">kcal</span></div>
+                <div class="progress progress-fitora mt-2 mb-1">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ cal_percentage }}%;" aria-valuenow="{{ cal_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">{{ cal_percentage }}% of daily goal consumed</small>
+            </div>
+        </div>
+
+        <!-- Calories Remaining -->
+        <div class="col-md-4 col-sm-12">
+            <div class="fitora-card h-100" style="border-left: 4px solid #14B8A6;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="metric-label">Calories Remaining</span>
+                    <i class="bi bi-lightning-charge-fill text-teal fs-4" style="color: #14B8A6;"></i>
+                </div>
+                <div class="metric-value {% if calories_remaining >= 0 %}text-navy{% else %}text-danger{% endif %}">
+                    {{ calories_remaining }} <span class="fs-6 text-muted fw-normal">kcal</span>
+                </div>
+                <small class="text-muted d-block">
+                    Formula: <code>Goal ({{ calorie_goal }}) - Consumed ({{ calories_consumed }}) = {{ calories_remaining }} kcal</code>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Macronutrient Progress Split -->
+    <div class="fitora-card mb-4">
+        <h5 class="fw-bold text-navy mb-3">Macronutrient Targets</h5>
+        <div class="row g-4 text-center">
+            <!-- Protein -->
+            <div class="col-md-4">
+                <div class="p-3 rounded-3" style="background-color: #F8FAFC;">
+                    <div class="d-flex justify-content-between text-muted small fw-bold mb-1">
+                        <span>PROTEIN</span>
+                        <span>{{ protein_consumed }}g / {{ protein_goal }}g</span>
+                    </div>
+                    <div class="progress progress-fitora mb-2">
+                        <div class="progress-bar progress-bar-teal" role="progressbar" style="width: {{ protein_percentage }}%;"></div>
+                    </div>
+                    <small class="text-muted">{{ protein_percentage }}% reached (4 kcal/g)</small>
+                </div>
+            </div>
+
+            <!-- Carbohydrates -->
+            <div class="col-md-4">
+                <div class="p-3 rounded-3" style="background-color: #F8FAFC;">
+                    <div class="d-flex justify-content-between text-muted small fw-bold mb-1">
+                        <span>CARBS</span>
+                        <span>{{ carbs_consumed }}g / {{ carbs_goal }}g</span>
+                    </div>
+                    <div class="progress progress-fitora mb-2">
+                        <div class="progress-bar progress-bar-navy" role="progressbar" style="width: {{ carbs_percentage }}%;"></div>
+                    </div>
+                    <small class="text-muted">{{ carbs_percentage }}% reached (4 kcal/g)</small>
+                </div>
+            </div>
+
+            <!-- Fat -->
+            <div class="col-md-4">
+                <div class="p-3 rounded-3" style="background-color: #F8FAFC;">
+                    <div class="d-flex justify-content-between text-muted small fw-bold mb-1">
+                        <span>FAT</span>
+                        <span>{{ fat_consumed }}g / {{ fat_goal }}g</span>
+                    </div>
+                    <div class="progress progress-fitora mb-2">
+                        <div class="progress-bar progress-bar-lime" role="progressbar" style="width: {{ fat_percentage }}%;"></div>
+                    </div>
+                    <small class="text-muted">{{ fat_percentage }}% reached (9 kcal/g)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid: Today's Meals & Weekly Trends -->
+    <div class="row g-4 mb-4">
+        <!-- Today's Meals Summary -->
+        <div class="col-lg-7">
+            <div class="fitora-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-navy mb-0">Today's Meals</h5>
+                    <a href="{% url 'food_diary' %}" class="btn btn-sm btn-fitora-outline">Full Diary</a>
+                </div>
+
+                {% if not has_entries %}
+                    <div class="text-center py-5 my-2">
+                        <div class="rounded-circle bg-light d-inline-flex p-3 text-muted mb-3">
+                            <i class="bi bi-egg-fried fs-1 text-teal" style="color: #14B8A6;"></i>
+                        </div>
+                        <h6 class="fw-bold text-navy">No meals logged for today yet!</h6>
+                        <p class="text-muted small max-w-400 mx-auto mb-3">
+                            Start tracking your energy intake to reach your personal fitness and health targets.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <a href="{% url 'add_entry' %}?meal=Breakfast" class="btn btn-sm btn-fitora-primary">+ Add Breakfast</a>
+                            <a href="{% url 'add_entry' %}?meal=Lunch" class="btn btn-sm btn-fitora-primary">+ Add Lunch</a>
+                            <a href="{% url 'add_entry' %}?meal=Dinner" class="btn btn-sm btn-fitora-primary">+ Add Dinner</a>
+                            <a href="{% url 'add_entry' %}?meal=Snacks" class="btn btn-sm btn-fitora-primary">+ Add Snack</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for category, data in today_meals.items %}
+                            <div class="border rounded-3 p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="fw-bold text-navy">
+                                        <i class="bi {% if category == 'Breakfast' %}bi-sun-fill text-warning{% elif category == 'Lunch' %}bi-cup-hot-fill text-teal{% elif category == 'Dinner' %}bi-moon-stars-fill text-navy{% else %}bi-apple text-success{% endif %} me-2"></i>
+                                        {{ category }}
+                                        <span class="badge bg-light text-muted ms-1 font-monospace">{{ data.count }} item{{ data.count|pluralize }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-navy">{{ data.calories }} kcal</span>
+                                        <a href="{% url 'add_entry' %}?meal={{ category }}" class="btn btn-sm btn-light py-0 px-2 text-teal" title="Add item to {{ category }}">+ Add</a>
+                                    </div>
+                                </div>
+                                {% if data.entries %}
+                                    <ul class="list-unstyled mb-0 small text-muted">
+                                        {% for entry in data.entries %}
+                                            <li class="d-flex justify-content-between py-1 border-top">
+                                                <span>{{ entry.food_name }} ({{ entry.serving_amount }}{{ entry.serving_unit }})</span>
+                                                <span class="fw-semibold text-dark">{{ entry.calories }} kcal</span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Weekly Calorie Trends Chart -->
+        <div class="col-lg-5">
+            <div class="fitora-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-navy mb-0">7-Day Calorie Trends</h5>
+                    <a href="{% url 'progress' %}" class="btn btn-sm btn-fitora-outline">Analytics</a>
+                </div>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="weeklyCalorieChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-between align-items-center text-muted small mt-3 pt-2 border-top">
+                    <span><span class="badge bg-teal me-1" style="background-color: #14B8A6;">■</span> Daily Consumed</span>
+                    <span><span class="badge bg-secondary me-1">--</span> Goal ({{ calorie_goal }} kcal)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Recent Entries & AI Quick Shortcut -->
+    <div class="row g-4">
+        <!-- Recent Entries -->
+        <div class="col-lg-8">
+            <div class="fitora-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-navy mb-0">Recent Food Entries</h5>
+                    <a href="{% url 'food_diary' %}" class="text-teal text-decoration-none small fw-semibold">View Diary &rarr;</a>
+                </div>
+                {% if recent_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Meal</th>
+                                    <th>Food</th>
+                                    <th>Serving</th>
+                                    <th>Calories</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in recent_entries %}
+                                    <tr>
+                                        <td class="small text-muted">{{ item.date|date:"M d" }}</td>
+                                        <td><span class="badge badge-category">{{ item.meal_category }}</span></td>
+                                        <td class="fw-semibold text-navy">{{ item.food_name }}</td>
+                                        <td class="small">{{ item.serving_amount }} {{ item.serving_unit }}</td>
+                                        <td class="fw-bold text-teal" style="color: #14B8A6;">{{ item.calories }} kcal</td>
+                                        <td>
+                                            <a href="{% url 'edit_entry' item.id %}" class="text-muted me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                                            <a href="{% url 'delete_entry' item.id %}" class="text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-0">No past entries recorded. Log your first meal today!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Fitora AI Quick Prompt Box -->
+        <div class="col-lg-4">
+            <div class="fitora-card" style="background: linear-gradient(145deg, #142B3B 0%, #1A394E 100%); color: #FFFFFF;">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-stars fs-4" style="color: #A3E635;"></i>
+                    <h5 class="fw-bold mb-0 text-white">Ask Fitora AI</h5>
+                </div>
+                <p class="text-white-50 small mb-3">
+                    Need instant nutrition guidance, error diagnosis, or calorie balance insights?
+                </p>
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <button class="btn btn-sm text-start text-white border-white-50 quick-prompt-btn rounded-2" data-prompt="How many calories do I have left today?">
+                        <i class="bi bi-chat-left-text me-2 text-lime" style="color: #A3E635;"></i> How many calories left today?
+                    </button>
+                    <button class="btn btn-sm text-start text-white border-white-50 quick-prompt-btn rounded-2" data-prompt="How do I add a custom recipe?">
+                        <i class="bi bi-chat-left-text me-2 text-lime" style="color: #A3E635;"></i> How do I add a recipe?
+                    </button>
+                    <button class="btn btn-sm text-start text-white border-white-50 quick-prompt-btn rounded-2" data-prompt="What should I do if I see error 429?">
+                        <i class="bi bi-chat-left-text me-2 text-lime" style="color: #A3E635;"></i> What does error 429 mean?
+                    </button>
+                </div>
+                <a href="{% url 'assistant_page' %}" class="btn btn-fitora-lime w-100 btn-sm">
+                    Open Full AI Assistant Consultation <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Weekly Calorie Trends Chart
+    const ctx = document.getElementById('weeklyCalorieChart').getContext('2d');
+    const labels = {{ chart_labels_json|safe }};
+    const calories = {{ chart_calories_json|safe }};
+    const goalLine = {{ chart_goal_json|safe }};
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Calories Consumed',
+                    data: calories,
+                    backgroundColor: '#14B8A6',
+                    borderRadius: 6,
+                    borderSkipped: false
+                },
+                {
+                    label: 'Daily Goal',
+                    data: goalLine,
+                    type: 'line',
+                    borderColor: '#94A3B8',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#F1F5F9' },
+                    ticks: { font: { size: 11 } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
