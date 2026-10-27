@@ -109,8 +109,8 @@ fitora/
 │   ├── accounts/                 # Login, register, profile
 │   ├── dashboard/                # Home and dashboard views
 │   ├── food_diary/               # Diary, entry form, confirm delete
-│   ├── recipes/                  # Recipe list, detail, form, delete
-│   ├── progress/                 # Progress & analytics view
+│   ├── recipes/                  # Recipe list, detail, form, saved meals list & forms
+│   ├── progress/                 # Progress & analytics view, edit weight record form
 │   ├── support/                  # FAQ, error guide, tickets, APP-001 notice
 │   └── assistant/                # Full AI consultation interface
 │
@@ -120,9 +120,11 @@ fitora/
 │   ├── js/chat.js                # Floating AI Assistant widget controller
 │   └── images/hero_banner.jpg    # Custom high-resolution nutrition hero image
 │
-└── tests/                        # 33 comprehensive automated tests
+└── tests/                        # 46 comprehensive automated tests (100% PASS)
     ├── test_auth.py              # Registration, login, access isolation
     ├── test_nutrition_and_diary.py # Diary CRUD, Decimal math, serving scaling
+    ├── test_stage3_features.py   # Starter foods search, Saved Meals CRUD & diary logging, validation
+    ├── test_stage4_features.py   # Weight history, date filtering (7/30/custom), macro & calorie analytics, empty states
     ├── test_recipes.py           # Ingredient math, per-serving values, diary logging
     ├── test_faq_and_support.py   # FAQ retrieval, search, ticket persistence
     ├── test_assistant_and_mongo.py # AI FAQ context, calorie retrieval, MongoDB mocks
@@ -269,4 +271,4 @@ Visit `http://127.0.0.1:8000/` in your browser.
 | **Monitoring & Feedback (5 Marks)**| Structured request logging | `support/middleware.py::RequestLoggingMiddleware` | Logged method, path, status, duration, user, IP | **PASS** | None |
 | **Monitoring & Feedback (5 Marks)**| Health check endpoint (`/health/`) | `support/views.py::health_check_view` | `tests/test_views_and_errors.py::test_health_check_endpoint` | **PASS** | None |
 | **Monitoring & Feedback (5 Marks)**| Nutrition API timeout & fallback | `nutrition/api_client.py::NutritionAPIClient` | `tests/test_api_client.py::test_nutrition_api_timeout_fallback`, `test_nutrition_api_rate_limit_429_fallback` | **PASS** | None |
-| **Viva & Problem Solving (5 Marks)**| Automated test suite & documentation | `tests/`, `README.md` | Full suite execution: 33 tests passed in 44.5s | **PASS** | None |
+| **Viva & Problem Solving (5 Marks)**| Automated test suite & documentation | `tests/`, `README.md` | Full suite execution: 46 tests passed in 79.2s | **PASS** | None |
