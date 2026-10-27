@@ -22,3 +22,15 @@ class SupportTicketForm(forms.ModelForm):
             self.fields['contact_email'].widget.attrs['placeholder'] = f"Using {user.email}"
         else:
             self.fields['contact_email'].required = True
+
+    def clean_subject(self):
+        subject = self.cleaned_data.get('subject', '').strip()
+        if not subject or len(subject) < 3:
+            raise forms.ValidationError("Subject must be at least 3 characters long.")
+        return subject
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description', '').strip()
+        if not description or len(description) < 5:
+            raise forms.ValidationError("Please provide a more detailed description (at least 5 characters).")
+        return description
