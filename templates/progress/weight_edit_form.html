@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Weight Record — Fitora{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 560px;">
+    <div class="mb-4">
+        <a href="{% url 'progress' %}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i> Back to Progress & Analytics
+        </a>
+        <h1 class="h2 fw-bold text-fitora-navy mt-2">Edit Weight Record</h1>
+        <p class="text-muted">Update your weigh-in measurement for <strong>{{ log.date|date:"F d, Y" }}</strong>.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2 small mb-3">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="id_date" class="form-label fw-semibold text-fitora-navy small">Measurement Date *</label>
+                <input type="date" name="date" id="id_date" class="form-control {% if form.date.errors %}is-invalid{% endif %}" value="{{ form.date.value|date:'Y-m-d'|default:log.date|date:'Y-m-d' }}" required>
+                {% if form.date.errors %}
+                    <div class="invalid-feedback">{{ form.date.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_weight" class="form-label fw-semibold text-fitora-navy small">Weight (kg) *</label>
+                <input type="number" step="0.1" min="20" max="500" name="weight" id="id_weight" class="form-control {% if form.weight.errors %}is-invalid{% endif %}" value="{{ form.weight.value|default:log.weight }}" required>
+                {% if form.weight.errors %}
+                    <div class="invalid-feedback">{{ form.weight.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label for="id_notes" class="form-label fw-semibold text-fitora-navy small">Notes (Optional)</label>
+                <input type="text" name="notes" id="id_notes" class="form-control {% if form.notes.errors %}is-invalid{% endif %}" value="{{ form.notes.value|default:log.notes }}" placeholder="e.g. Fasted morning weigh-in">
+                {% if form.notes.errors %}
+                    <div class="invalid-feedback">{{ form.notes.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'progress' %}" class="btn btn-light px-4">Cancel</a>
+                <button type="submit" class="btn btn-fitora-teal px-4">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

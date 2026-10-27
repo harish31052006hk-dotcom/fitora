@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="text-center max-w-750 mx-auto mb-5">
+        <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-bold mb-2">Technical Documentation</span>
+        <h2 class="display-6 fw-bold text-navy">Error Code & Troubleshooting Guide</h2>
+        <p class="text-muted">
+            Official diagnostic documentation for all seven standard HTTP status codes and Fitora's application-specific error code (APP-001).
+        </p>
+    </div>
+
+    <!-- Error Codes Grid -->
+    <div class="row g-4">
+        {% for code_key, err in error_codes.items %}
+            <div class="col-lg-6" id="code-{{ code_key }}">
+                <div class="fitora-card h-100 d-flex flex-column justify-content-between" style="border-top: 4px solid {% if code_key == 'APP-001' %}#14B8A6{% elif '50' in code_key %}#EF4444{% elif code_key == '429' %}#F59E0B{% else %}#142B3B{% endif %};">
+                    <div>
+                        <!-- Header with Badges -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge {% if code_key == 'APP-001' %}bg-teal text-white{% else %}bg-navy text-white{% endif %} fs-6 px-2 py-1 font-monospace" {% if code_key == 'APP-001' %}style="background-color: #14B8A6;"{% endif %}>
+                                    {{ err.code }}
+                                </span>
+                                <h5 class="fw-bold text-navy mt-2 mb-1">{{ err.title }}</h5>
+                            </div>
+                            <span class="badge {% if err.resolvable_by_user %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
+                                {% if err.resolvable_by_user %}User Resolvable{% else %}Needs Engineering Support{% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Meaning -->
+                        <div class="mb-3">
+                            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Meaning & Context:</span>
+                            <p class="text-muted small mb-0">{{ err.meaning }}</p>
+                        </div>
+
+                        <!-- Common Causes -->
+                        <div class="mb-3">
+                            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Common Causes:</span>
+                            <ul class="list-unstyled mb-0 small text-muted">
+                                {% for cause in err.common_causes %}
+                                    <li class="d-flex gap-2 mb-1">
+                                        <i class="bi bi-x-circle text-danger mt-1"></i>
+                                        <span>{{ cause }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Troubleshooting Steps -->
+                        <div class="mb-3 p-3 rounded-3" style="background-color: #F8FAFC; border: 1px dashed #CBD5E1;">
+                            <span class="text-navy small fw-bold text-uppercase d-block mb-1">
+                                <i class="bi bi-tools text-teal me-1" style="color: #14B8A6;"></i> Recommended Troubleshooting Steps:
+                            </span>
+                            <ul class="list-unstyled mb-0 small text-muted">
+                                {% for step in err.troubleshooting %}
+                                    <li class="d-flex gap-2 mb-1">
+                                        <i class="bi bi-check2 text-teal mt-1" style="color: #14B8A6;"></i>
+                                        <span>{{ step }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Footer Action -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
+                        <span><strong>Resolution:</strong> {{ err.resolution_party }}</span>
+                        {% if code_key == 'APP-001' %}
+                            <a href="{% url 'demo_app001' %}" class="btn btn-sm btn-fitora-outline py-1">View Demo</a>
+                        {% else %}
+                            <button class="btn btn-sm btn-light py-1 quick-prompt-btn" data-prompt="Explain error {{ err.code }}">
+                                <i class="bi bi-stars text-teal me-1" style="color: #14B8A6;"></i> Ask AI
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Application Code Distinction Banner -->
+    <div class="fitora-card mt-5 p-4" style="background-color: #F8FAFC; border-left: 4px solid #14B8A6;">
+        <h5 class="fw-bold text-navy mb-2"><i class="bi bi-info-circle-fill text-teal me-2" style="color: #14B8A6;"></i> Understanding Application-Specific Codes vs HTTP Codes</h5>
+        <p class="text-muted small mb-0">
+            HTTP status codes (such as 400, 404, or 500) represent transport and protocol-level responses between the client and web server. In contrast, <strong>APP-001</strong> is an internal application-level code used within Fitora to signal specific business-logic scenarios—such as nutrition calculation overflow or automated fallback to the local PostgreSQL database when an external nutrition API times out.
+        </p>
+    </div>
+</div>
+{% endblock %}

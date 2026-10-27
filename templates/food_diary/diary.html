@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Date Navigation Header -->
+    <div class="fitora-card mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'food_diary' %}?date={{ prev_date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm px-3" title="Previous Day">
+                    <i class="bi bi-chevron-left"></i> Prev
+                </a>
+                
+                <h4 class="fw-bold text-navy mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar3 text-teal" style="color: #14B8A6;"></i>
+                    {{ current_date|date:"l, F d, Y" }}
+                    {% if is_today %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle fs-6 py-1 px-2">Today</span>
+                    {% endif %}
+                </h4>
+
+                <a href="{% url 'food_diary' %}?date={{ next_date|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm px-3" title="Next Day">
+                    Next <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <form method="get" class="d-flex align-items-center gap-2">
+                    <input type="date" name="date" class="form-control form-control-sm" value="{{ current_date|date:'Y-m-d' }}" onchange="this.form.submit()">
+                </form>
+                {% if not is_today %}
+                    <a href="{% url 'food_diary' %}" class="btn btn-sm btn-fitora-outline">Jump to Today</a>
+                {% endif %}
+                <a href="{% url 'add_entry' %}?date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Add Food
+                </a>
+                <a href="{% url 'assistant_page' %}?prompt=Review%20my%20food%20diary%20for%20today%20and%20suggest%20one%20practical%20improvement%20using%20only%20my%20logged%20data." class="btn btn-sm btn-fitora-outline">
+                    <i class="bi bi-stars me-1"></i> Ask AI
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Exceeded Notice -->
+    {% if goal_exceeded %}
+        <div class="alert alert-danger d-flex align-items-center gap-3 mb-4 rounded-3 shadow-sm border-0" role="alert" style="background-color: #FEE2E2; color: #991B1B;">
+            <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+            <div>
+                <strong class="d-block fs-6">Daily Calorie Target Exceeded!</strong>
+                <span>You have consumed <strong>{{ total_calories }} kcal</strong> against your goal of <strong>{{ calorie_goal }} kcal</strong> (exceeded by <strong>{{ exceeded_by }} kcal</strong>).</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Daily Energy & Macronutrient Progress Summary -->
+    <div class="fitora-card mb-4" style="background: linear-gradient(145deg, #142B3B 0%, #1A384D 100%); color: #FFFFFF;">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-3 col-md-6 border-end border-secondary-subtle">
+                <span class="text-white-50 small fw-bold text-uppercase">Calories Consumed</span>
+                <div class="display-6 fw-bold {% if goal_exceeded %}text-danger{% else %}text-lime{% endif %} mt-1" {% if not goal_exceeded %}style="color: #A3E635;"{% endif %}>
+                    {{ total_calories }} <span class="fs-6 text-white-50 fw-normal">kcal</span>
+                </div>
+                <div class="progress progress-fitora mt-2" style="background-color: rgba(255,255,255,0.2);">
+                    <div class="progress-bar {% if goal_exceeded %}bg-danger{% else %}progress-bar-lime{% endif %}" style="width: {{ cal_percent }}%;"></div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6 border-end border-secondary-subtle">
+                <span class="text-white-50 small fw-bold text-uppercase">Daily Calorie Goal</span>
+                <div class="display-6 fw-bold text-white mt-1">{{ calorie_goal }} <span class="fs-6 text-white-50 fw-normal">kcal</span></div>
+                <small class="text-white-50">{{ cal_percent }}% of target energy consumed</small>
+            </div>
+
+            <div class="col-lg-3 col-md-6 border-end border-secondary-subtle">
+                <span class="text-white-50 small fw-bold text-uppercase">Calories Remaining</span>
+                <div class="display-6 fw-bold {% if goal_exceeded %}text-danger{% else %}text-white{% endif %} mt-1">
+                    {{ calories_remaining }} <span class="fs-6 text-white-50 fw-normal">kcal</span>
+                </div>
+                <small class="text-white-50">Calculation: <code>Goal ({{ calorie_goal }}) - Consumed ({{ total_calories }}) = {{ calories_remaining }}</code></small>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <span class="text-white-50 small fw-bold text-uppercase d-block mb-1">Macronutrients</span>
+                <div class="small text-white-50 d-flex justify-content-between mb-1">
+                    <span>Protein: <strong class="text-white">{{ total_protein }}g</strong> / {{ profile.daily_protein_goal }}g</span>
+                    <span>{{ protein_percent }}%</span>
+                </div>
+                <div class="small text-white-50 d-flex justify-content-between mb-1">
+                    <span>Carbs: <strong class="text-white">{{ total_carbs }}g</strong> / {{ profile.daily_carbs_goal }}g</span>
+                    <span>{{ carbs_percent }}%</span>
+                </div>
+                <div class="small text-white-50 d-flex justify-content-between">
+                    <span>Fat: <strong class="text-white">{{ total_fat }}g</strong> / {{ profile.daily_fat_goal }}g</span>
+                    <span>{{ fat_percent }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State when whole day has no entries -->
+    {% if not has_entries %}
+        <div class="fitora-card text-center py-5 my-3">
+            <div class="rounded-circle bg-light d-inline-flex p-3 text-muted mb-3">
+                <i class="bi bi-journal-x fs-1 text-teal" style="color: #14B8A6;"></i>
+            </div>
+            <h5 class="fw-bold text-navy mb-1">No meals logged for {{ current_date|date:"F d, Y" }}</h5>
+            <p class="text-muted small max-w-400 mx-auto mb-4">
+                Keep your nutrition on track by recording what you eat for Breakfast, Lunch, Dinner, or Snacks.
+            </p>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <a href="{% url 'add_entry' %}?meal=Breakfast&date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-primary">+ Add Breakfast</a>
+                <a href="{% url 'add_entry' %}?meal=Lunch&date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-primary">+ Add Lunch</a>
+                <a href="{% url 'add_entry' %}?meal=Dinner&date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-primary">+ Add Dinner</a>
+                <a href="{% url 'add_entry' %}?meal=Snacks&date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-primary">+ Add Snacks</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Meal Category Sections -->
+    <div class="d-flex flex-column gap-4">
+        {% for category, data in meals_data.items %}
+            <div class="fitora-card">
+                <div class="d-flex justify-content-between align-items-center pb-3 border-bottom mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi {% if category == 'Breakfast' %}bi-sun-fill text-warning fs-4{% elif category == 'Lunch' %}bi-cup-hot-fill text-teal fs-4{% elif category == 'Dinner' %}bi-moon-stars-fill text-navy fs-4{% else %}bi-apple text-success fs-4{% endif %}"></i>
+                        <h5 class="fw-bold text-navy mb-0">{{ category }}</h5>
+                        <span class="badge bg-light text-muted border font-monospace">{{ data.count }} item{{ data.count|pluralize }}</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end">
+                            <span class="fw-bold text-navy fs-5">{{ data.calories }}</span>
+                            <span class="text-muted small">kcal</span>
+                            <span class="text-muted small ms-2 d-none d-sm-inline">(P: {{ data.protein }}g | C: {{ data.carbohydrates }}g | F: {{ data.fat }}g)</span>
+                        </div>
+                        <a href="{% url 'add_entry' %}?meal={{ category }}&date={{ current_date|date:'Y-m-d' }}" class="btn btn-sm btn-fitora-outline">
+                            <i class="bi bi-plus-circle me-1"></i> Add Food
+                        </a>
+                    </div>
+                </div>
+
+                {% if data.entries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th style="min-width: 180px;">Food Item</th>
+                                    <th>Serving Size</th>
+                                    <th>Quantity</th>
+                                    <th>Calories</th>
+                                    <th>Protein</th>
+                                    <th>Carbs</th>
+                                    <th>Fat</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in data.entries %}
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold text-navy">{{ item.food_name }}</span>
+                                            {% if item.brand %}
+                                                <small class="text-muted d-block">{{ item.brand }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted">{{ item.serving_amount }} {{ item.serving_unit }}</td>
+                                        <td><span class="badge bg-light text-secondary border font-monospace">{{ item.quantity }}</span></td>
+                                        <td class="fw-bold text-teal" style="color: #14B8A6;">{{ item.calories }} kcal</td>
+                                        <td>{{ item.protein }}g</td>
+                                        <td>{{ item.carbohydrates }}g</td>
+                                        <td>{{ item.fat }}g</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'edit_entry' item.id %}" class="btn btn-sm btn-light py-0 px-2 text-muted" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'delete_entry' item.id %}" class="btn btn-sm btn-light py-0 px-2 text-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3 text-muted small">
+                        No food items logged for {{ category }}. Click <strong>+ Add Food</strong> to record your meal.
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Grand Totals Table -->
+    <div class="fitora-card mt-4 p-3 bg-light">
+        <div class="row text-center align-items-center">
+            <div class="col-md-3 col-6 py-2">
+                <span class="text-muted small fw-bold">TOTAL CALORIES</span>
+                <h4 class="fw-bold text-navy mb-0">{{ total_calories }} kcal</h4>
+            </div>
+            <div class="col-md-3 col-6 py-2 border-start">
+                <span class="text-muted small fw-bold">TOTAL PROTEIN</span>
+                <h4 class="fw-bold text-teal mb-0" style="color: #14B8A6;">{{ total_protein }} g</h4>
+            </div>
+            <div class="col-md-3 col-6 py-2 border-start">
+                <span class="text-muted small fw-bold">TOTAL CARBS</span>
+                <h4 class="fw-bold text-navy mb-0">{{ total_carbs }} g</h4>
+            </div>
+            <div class="col-md-3 col-6 py-2 border-start">
+                <span class="text-muted small fw-bold">TOTAL FAT</span>
+                <h4 class="fw-bold text-lime mb-0" style="color: #84CC16;">{{ total_fat }} g</h4>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

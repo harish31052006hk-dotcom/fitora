@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if title %}{{ title }} — {% endif %}Fitora</title>
+    <meta name="description" content="Fitora — AI-Powered Fitness and Nutrition Tracker. Calorie tracking, food diary, recipe manager, and AI nutrition assistant.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <!-- Fitora Custom Styles -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-fitora">
+        <div class="container">
+            <a class="navbar-brand navbar-brand-logo" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">
+                <span class="brand-symbol"><i class="bi bi-activity"></i></span>
+                <span>FITORA</span>
+                <span class="brand-badge">WELLNESS</span>
+            </a>
+
+            <button class="navbar-toggler text-primary border-0" type="button" data-bs-toggle="collapse" data-bs-target="#fitoraNav" aria-controls="fitoraNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-2"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="fitoraNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'diary' in request.path %}active{% endif %}" href="{% url 'food_diary' %}"><i class="bi bi-journal-text"></i> Diary</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'plan' in request.path %}active{% endif %}" href="{% url 'weekly_plan' %}"><i class="bi bi-calendar2-week"></i> Weekly Plan</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link nav-link-fitora dropdown-toggle {% if 'saved-meals' in request.path or 'recipes' in request.path %}active{% endif %}" href="#" id="mealLibraryMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-bookmark"></i> Meal Library</a>
+                            <ul class="dropdown-menu border-0 shadow-sm rounded-4 p-2" aria-labelledby="mealLibraryMenu">
+                                <li><a class="dropdown-item rounded-3 py-2" href="{% url 'saved_meals_list' %}"><i class="bi bi-bookmark-heart me-2"></i>Saved Meals</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2" href="{% url 'recipe_list' %}"><i class="bi bi-egg-fried me-2"></i>Recipes</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-fitora {% if 'progress' in request.path %}active{% endif %}" href="{% url 'progress' %}"><i class="bi bi-graph-up"></i> Progress</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-fitora {% if 'assistant' in request.path %}active{% endif %}" href="{% url 'assistant_page' %}"><i class="bi bi-stars"></i> AI Coach</a>
+                    </li>
+                </ul>
+
+                <!-- User Account Actions -->
+                <div class="d-flex align-items-center gap-2">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'profile' %}" class="btn btn-account btn-sm d-flex align-items-center gap-2 px-3 py-2 rounded-pill">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="fw-semibold">{{ user.username }}</span>
+                        </a>
+                        <a href="{% url 'logout' %}" class="btn btn-sm btn-fitora-outline text-white border-white-50 px-3 py-2 rounded-pill">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-sm btn-signin px-3 py-2 fw-semibold">Sign In</a>
+                        <a href="{% url 'register' %}" class="btn btn-fitora-lime btn-sm px-4 py-2">Get Started</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Alerts Container -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                        {% endif %}
+                        <div>{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating assistant shortcut is available throughout the workspace, but not duplicated on its full-page view. -->
+    {% if request.resolver_match.url_name != 'assistant_page' %}
+    <a href="#" id="fitoraAiTrigger" class="floating-ai-trigger" aria-label="Open Fitora AI Assistant">
+        <span class="floating-ai-pulse"></span>
+        <i class="bi bi-stars fs-5" style="color: #A3E635;"></i>
+        <span>Ask Fitora AI</span>
+    </a>
+
+    <!-- Floating Chat Modal Window -->
+    <div id="fitoraChatWindow" class="chat-window d-none" style="display: none;">
+        <div class="chat-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-robot text-lime fs-5" style="color: #A3E635;"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold">Fitora AI Assistant</h6>
+                    <small class="text-white-50" style="font-size: 0.75rem;">Meals · Goals · Planning</small>
+                </div>
+            </div>
+            <button id="chatCloseBtn" class="btn btn-sm text-white p-0" aria-label="Close Chat">
+                <i class="bi bi-x-lg fs-5"></i>
+            </button>
+        </div>
+
+        <div id="chatMessages" class="chat-body">
+            <!-- Welcome message -->
+            <div class="chat-bubble chat-bubble-ai">
+                <div class="fw-bold text-navy mb-1">Hi {% if user.is_authenticated %}{{ user.username }}{% else %}there{% endif %}! 👋</div>
+                I can help you understand your food log, make a practical meal choice, or turn your targets into a workable plan.
+                <div class="mt-2 pt-2 border-top">
+                    <span class="small fw-semibold text-muted d-block mb-1">Try one</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% if user.is_authenticated %}
+                            <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-1 px-2" data-prompt="Review my food diary for today and suggest one practical improvement using only my logged data." style="font-size: 0.75rem;">Review today</button>
+                            <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-1 px-2" data-prompt="How many calories have I consumed today, and how much remains against my saved Fitora target?" style="font-size: 0.75rem;">My intake</button>
+                        {% endif %}
+                        <button class="btn btn-xs btn-outline-secondary quick-prompt-btn py-1 px-2" data-prompt="Suggest one balanced, affordable meal and explain how I can adjust its portion to my goal." style="font-size: 0.75rem;">Meal idea</button>
+                        <a href="{% url 'weekly_plan' %}" class="btn btn-xs btn-outline-secondary py-1 px-2" style="font-size: 0.75rem;">Build weekly plan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <div id="chatImagePreview" class="chat-image-preview" hidden></div>
+            <input type="file" id="chatImageInput" accept="image/png,image/jpeg,image/webp" hidden>
+            <div class="chat-compose-row">
+                <button id="chatAttachBtn" class="chat-attach-btn" type="button" aria-label="Attach an image" title="Attach food or fitness image"><i class="bi bi-paperclip"></i></button>
+                <input type="text" id="chatInput" class="form-control chat-text-input" placeholder="Ask about food, calories, or attach an image…" maxlength="1000" autocomplete="off">
+                <button id="chatSendBtn" class="btn btn-fitora-primary chat-send-btn" type="button" aria-label="Send message"><i class="bi bi-arrow-up"></i></button>
+            </div>
+            <div class="chat-footnote"><span>AI insights · Estimates may vary</span><a href="{% url 'error_guide' %}">Help & errors</a></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Footer: compact and user-focused -->
+    <footer class="footer-fitora footer-minimal">
+        <div class="container">
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-5 col-md-6">
+                    <a class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">
+                        <span class="brand-symbol"><i class="bi bi-activity"></i></span>
+                        <span class="fs-5 fw-bold brand-font" style="color:#203777;">FITORA</span>
+                    </a>
+                    <p class="text-muted small mb-2">Practical nutrition tracking and calmer, more consistent habits—with AI to help turn your goals into next steps.</p>
+                    <span class="footer-safety-note"><i class="bi bi-shield-check me-1"></i>Nutrition estimates are informational, not medical advice.</span>
+                </div>
+                <div class="col-6 col-lg-3 col-md-3">
+                    <h6 class="footer-heading">Your workspace</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small mb-0">
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'dashboard' %}" class="footer-link">Overview</a></li>
+                            <li><a href="{% url 'food_diary' %}" class="footer-link">Food diary</a></li>
+                            <li><a href="{% url 'weekly_plan' %}" class="footer-link">Weekly plan</a></li>
+                            <li><a href="{% url 'progress' %}" class="footer-link">Progress</a></li>
+                        {% else %}
+                            <li><a href="{% url 'login' %}" class="footer-link">Sign in</a></li>
+                            <li><a href="{% url 'register' %}" class="footer-link">Create account</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-3 col-md-3">
+                    <h6 class="footer-heading">Help</h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small mb-0">
+                        <li><a href="{% url 'assistant_page' %}" class="footer-link">Ask Fitora AI</a></li>
+                        <li><a href="{% url 'faq' %}" class="footer-link">Frequently asked questions</a></li>
+                        <li><a href="{% url 'error_guide' %}" class="footer-link">Troubleshooting</a></li>
+                        <li><a href="{% url 'support_tickets' %}" class="footer-link">Support tickets</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-minimal-bottom mt-4 pt-3 d-flex flex-wrap justify-content-between gap-2 small">
+                <span>© {{ CURRENT_YEAR }} Fitora</span>
+                <span>Built for consistency, not perfection.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Fitora AI Chat JS -->
+    <script src="{% static 'js/chat.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

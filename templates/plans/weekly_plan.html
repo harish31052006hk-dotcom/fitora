@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="weekly-plan-page container py-4 py-lg-5">
+    <header class="weekly-plan-heading mb-4">
+        <div>
+            <span class="eyebrow"><span class="status-dot"></span> YOUR NEXT SEVEN DAYS</span>
+            <h1 class="page-title mt-2 mb-2">A plan that fits real life.</h1>
+            <p class="page-subtitle mb-0">A flexible meal and movement plan built around your Fitora targets, preferences and recent diary logs.</p>
+        </div>
+        <div class="week-chip"><i class="bi bi-calendar3 me-2"></i>{{ week_start|date:'M j' }} – {{ week_end|date:'M j, Y' }}</div>
+    </header>
+
+    <div class="weekly-plan-summary frost-panel mb-4">
+        <div class="summary-icon"><i class="bi bi-stars"></i></div>
+        <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <h2 class="h5 mb-0">Your current targets</h2>
+                <span class="quiet-tag">Editable in your profile</span>
+            </div>
+            <div class="target-chips">
+                <span><strong>{{ profile.daily_calorie_goal }}</strong> kcal / day</span>
+                <span><strong>{{ profile.daily_protein_goal }}g</strong> protein</span>
+                <span><strong>{{ profile.daily_carbs_goal }}g</strong> carbs</span>
+                <span><strong>{{ profile.daily_fat_goal }}g</strong> fat</span>
+            </div>
+        </div>
+        <a class="btn btn-fitora-outline btn-sm" href="{% url 'profile' %}">Edit targets</a>
+    </div>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-4">
+            <section class="fitora-card weekly-preferences-card">
+                <div class="section-kicker">PERSONALISE</div>
+                <h2 class="h5 fw-bold mb-2">Make this week yours</h2>
+                <p class="small text-muted mb-3">Change these settings and generate a new plan. Your diary entries are used as context; they are never treated as a complete food record.</p>
+                <form method="post" action="{% url 'weekly_plan' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="planGoal" class="form-label small fw-semibold">Main goal</label>
+                        <select id="planGoal" name="goal" class="form-select" required>
+                            <option value="general_health" {% if form_values.goal == 'general_health' %}selected{% endif %}>Build healthy habits</option>
+                            <option value="fat_loss" {% if form_values.goal == 'fat_loss' %}selected{% endif %}>Fat loss</option>
+                            <option value="maintenance" {% if form_values.goal == 'maintenance' %}selected{% endif %}>Maintain weight</option>
+                            <option value="muscle_gain" {% if form_values.goal == 'muscle_gain' %}selected{% endif %}>Muscle gain</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="planDiet" class="form-label small fw-semibold">Food preference</label>
+                        <select id="planDiet" name="diet" class="form-select" required>
+                            <option value="flexible" {% if form_values.diet == 'flexible' %}selected{% endif %}>Flexible / mixed diet</option>
+                            <option value="vegetarian" {% if form_values.diet == 'vegetarian' %}selected{% endif %}>Vegetarian</option>
+                            <option value="vegan" {% if form_values.diet == 'vegan' %}selected{% endif %}>Vegan</option>
+                            <option value="pescatarian" {% if form_values.diet == 'pescatarian' %}selected{% endif %}>Pescatarian</option>
+                            <option value="high_protein" {% if form_values.diet == 'high_protein' %}selected{% endif %}>High-protein focus</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="trainingDays" class="form-label small fw-semibold">Training days</label>
+                            <select id="trainingDays" name="training_days" class="form-select">
+                                {% for value, label in training_day_options %}
+                                    <option value="{{ value }}" {% if form_values.training_days == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="prepTime" class="form-label small fw-semibold">Cooking time</label>
+                            <select id="prepTime" name="prep_time" class="form-select">
+                                <option value="15" {% if form_values.prep_time == '15' %}selected{% endif %}>15 min</option>
+                                <option value="30" {% if form_values.prep_time == '30' %}selected{% endif %}>30 min</option>
+                                <option value="60" {% if form_values.prep_time == '60' %}selected{% endif %}>60 min</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="planBudget" class="form-label small fw-semibold">Food budget</label>
+                        <select id="planBudget" name="budget" class="form-select">
+                            <option value="low" {% if form_values.budget == 'low' %}selected{% endif %}>Budget-conscious</option>
+                            <option value="moderate" {% if form_values.budget == 'moderate' %}selected{% endif %}>Moderate</option>
+                            <option value="flexible" {% if form_values.budget == 'flexible' %}selected{% endif %}>Flexible</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="foodsToAvoid" class="form-label small fw-semibold">Foods to avoid or other preferences <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea id="foodsToAvoid" name="foods_to_avoid" class="form-control" rows="3" maxlength="300" placeholder="e.g. peanuts, no fish, simple meals for college days">{{ form_values.foods_to_avoid }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-fitora-primary w-100"><i class="bi bi-stars me-2"></i>{% if plan %}Update this week{% else %}Build my weekly plan{% endif %}</button>
+                </form>
+                <div class="plan-privacy-note mt-3"><i class="bi bi-shield-check me-1"></i>Only use preferences you are comfortable sharing with the configured AI provider.</div>
+            </section>
+
+            {% if plan %}
+            <section class="fitora-card mt-4">
+                <div class="section-kicker">PREP ONCE, EAT EASIER</div>
+                <h2 class="h6 fw-bold mb-3">Prep ideas</h2>
+                {% if plan_data.prep_tips %}
+                    <ul class="plan-simple-list">
+                        {% for tip in plan_data.prep_tips %}<li>{{ tip }}</li>{% endfor %}
+                    </ul>
+                {% else %}<p class="small text-muted mb-0">Choose two easy meals and prepare ingredients ahead of time.</p>{% endif %}
+                {% if plan_data.shopping_list %}
+                    <div class="plan-section-rule"></div>
+                    <h3 class="h6 fw-bold mb-3">Shopping list</h3>
+                    <ul class="plan-shopping-list">
+                        {% for item in plan_data.shopping_list %}<li><span class="shopping-check" aria-hidden="true"></span>{{ item }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-8">
+            {% if plan %}
+                {% if plan.generation_source != 'ai' and plan.generation_note %}
+                    <div class="alert alert-info small py-2 px-3 mb-3"><i class="bi bi-info-circle me-1"></i>{{ plan.generation_note }}</div>
+                {% endif %}
+                <section class="plan-result-heading mb-3">
+                    <div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            {% if plan.generation_source == 'ai' %}<span class="source-pill source-pill-ai"><i class="bi bi-stars me-1"></i>AI-generated</span>{% else %}<span class="source-pill"><i class="bi bi-layout-text-window me-1"></i>Starter template</span>{% endif %}
+                            <span class="source-pill"><i class="bi bi-calendar-check me-1"></i>Saved for this week</span>
+                        </div>
+                        <h2 class="h4 fw-bold mb-1">{{ plan_data.title|default:'Your weekly rhythm' }}</h2>
+                        <p class="small text-muted mb-0">{{ plan_data.summary }}</p>
+                    </div>
+                </section>
+
+                <div class="plan-focus-card mb-3">
+                    <div class="focus-icon"><i class="bi bi-compass"></i></div>
+                    <div><div class="small text-uppercase fw-bold focus-label">This week's focus</div><p class="mb-0">{{ plan_data.primary_focus }}</p></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-md-3"><div class="plan-stat"><span>Calories</span><strong>{{ plan_data.daily_target.calories_kcal|default:profile.daily_calorie_goal }}</strong><small>kcal / day</small></div></div>
+                    <div class="col-6 col-md-3"><div class="plan-stat"><span>Protein</span><strong>{{ plan_data.daily_target.protein_g|default:profile.daily_protein_goal }}g</strong><small>per day</small></div></div>
+                    <div class="col-6 col-md-3"><div class="plan-stat"><span>Carbohydrates</span><strong>{{ plan_data.daily_target.carbs_g|default:profile.daily_carbs_goal }}g</strong><small>per day</small></div></div>
+                    <div class="col-6 col-md-3"><div class="plan-stat"><span>Fat</span><strong>{{ plan_data.daily_target.fat_g|default:profile.daily_fat_goal }}g</strong><small>per day</small></div></div>
+                </div>
+
+                <div class="weekly-days-grid">
+                    {% for day in plan_data.days %}
+                    <details class="plan-day-card" {% if forloop.first %}open{% endif %}>
+                        <summary class="plan-day-header">
+                            <div><span class="day-number">{{ forloop.counter|stringformat:'02d' }}</span><h3>{{ day.day }}</h3></div>
+                            <span class="day-summary-right"><span class="day-focus">{{ day.focus }}</span><i class="bi bi-chevron-down" aria-hidden="true"></i></span>
+                        </summary>
+                        <div class="plan-meals-list">
+                            {% for meal in day.meals %}
+                            <div class="plan-meal-row">
+                                <div class="meal-type-dot" aria-hidden="true"></div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="meal-type">{{ meal.type }}</div>
+                                    <div class="meal-name">{{ meal.name }}</div>
+                                    <p class="meal-description">{{ meal.description }}</p>
+                                </div>
+                                <div class="meal-nutrition"><strong>{{ meal.calories_kcal }}</strong><span>kcal*</span><small>{{ meal.protein_g }}g protein</small></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="day-movement"><i class="bi bi-activity"></i><div><strong>Movement</strong><p>{{ day.movement }}</p></div></div>
+                        <div class="day-habit"><i class="bi bi-check2-circle"></i><span>{{ day.habit }}</span></div>
+                    </details>
+                    {% endfor %}
+                </div>
+                {% if plan_data.notes %}<p class="plan-disclaimer mt-3"><i class="bi bi-info-circle me-1"></i>{{ plan_data.notes }}</p>{% endif %}
+                <div class="plan-actions mt-4">
+                    <div><strong>Want to adapt this plan?</strong><p class="mb-0 small text-muted">Ask Fitora to swap meals, use ingredients you have, or make the schedule easier.</p></div>
+                    <a class="btn btn-fitora-primary" href="{% url 'assistant_page' %}?prompt=Help%20me%20adapt%20my%20current%20weekly%20meal%20plan%20to%20my%20schedule%20and%20preferences."><i class="bi bi-stars me-2"></i>Refine with AI</a>
+                </div>
+            {% else %}
+                <section class="plan-empty-state frost-panel">
+                    <div class="empty-orbit"><i class="bi bi-calendar2-week"></i></div>
+                    <span class="eyebrow">YOUR PLAN STARTS HERE</span>
+                    <h2 class="h3 fw-bold mt-2 mb-2">Less planning. More consistency.</h2>
+                    <p class="text-muted mb-4">Set a few preferences and Fitora will build a seven-day outline for meals, movement and simple habits—using your current nutrition targets and recent diary data where available.</p>
+                    <div class="empty-benefits">
+                        <span><i class="bi bi-check2"></i> Meal ideas with rough nutrition estimates</span>
+                        <span><i class="bi bi-check2"></i> Movement and habit prompts for each day</span>
+                        <span><i class="bi bi-check2"></i> Prep suggestions and a shopping list</span>
+                    </div>
+                    <p class="small text-muted mt-4 mb-0">Your first plan will appear here and be saved for the current week.</p>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

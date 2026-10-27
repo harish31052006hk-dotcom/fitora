@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4 max-w-700">
+    <div class="fitora-card">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h4 class="fw-bold text-navy mb-1">{{ title }}</h4>
+                <p class="text-muted small mb-0">Configure your recipe name, portions, and description.</p>
+            </div>
+            <a href="{% url 'recipe_list' %}" class="btn btn-outline-secondary btn-sm">
+                Cancel
+            </a>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Recipe / Meal Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Number of Servings *</label>
+                {{ form.servings }}
+                {% if form.servings.errors %}<div class="text-danger small">{{ form.servings.errors.0 }}</div>{% endif %}
+                <small class="text-muted">Total nutritional values will be divided by this number to get per-serving numbers.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Description / Preparation Notes</label>
+                {{ form.description }}
+            </div>
+
+            <div class="form-check form-switch mb-4">
+                {{ form.is_favorite_meal }}
+                <label class="form-check-label fw-semibold text-navy" for="{{ form.is_favorite_meal.id_for_label }}">
+                    Mark as a Favorite Saved Meal (shows under "My Meals")
+                </label>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a href="{% url 'recipe_list' %}" class="btn btn-outline-secondary">Back</a>
+                <button type="submit" class="btn btn-fitora-primary px-4">
+                    {% if is_edit %}Save Changes{% else %}Continue to Add Ingredients &rarr;{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

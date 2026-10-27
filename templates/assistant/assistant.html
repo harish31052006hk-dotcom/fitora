@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="assistant-page-shell container py-4 py-lg-5">
+    <div class="assistant-page-heading">
+        <div>
+            <span class="eyebrow"><span class="status-dot"></span> FITORA INTELLIGENCE</span>
+            <h1 class="page-title mt-2 mb-2">Your nutrition and habit workspace.</h1>
+            <p class="page-subtitle mb-0">Get clear answers about your diary, goals and meals. Attach a food photo when it helps.</p>
+        </div>
+        <a class="btn btn-fitora-outline" href="{% url 'dashboard' %}"><i class="bi bi-arrow-left me-2"></i>Back to overview</a>
+    </div>
+
+    <div class="assistant-workspace frost-panel mt-4" data-initial-prompt="{{ request.GET.prompt|default:''|escape }}">
+        <header class="assistant-workspace-header">
+            <div class="assistant-avatar"><i class="bi bi-stars"></i></div>
+            <div class="flex-grow-1">
+                <h2 class="h6 mb-1">Fitora AI</h2>
+                <p class="mb-0">Nutrition guidance · Food understanding · App support</p>
+            </div>
+            <span class="assistant-status"><span class="status-dot"></span> Ready for a question</span>
+        </header>
+
+        <div id="fullChatMessages" class="assistant-conversation" aria-live="polite">
+            <div class="chat-bubble chat-bubble-ai welcome-ai-bubble">
+                <strong>Welcome{% if user.is_authenticated %}, {{ user.first_name|default:user.username|escape }}{% endif %}.</strong>
+                <p class="mb-2 mt-2">Tell me what you want to improve. I can use your recorded Fitora data, help plan meals, and analyse food photos without treating estimates as exact.</p>
+                <div class="prompt-caption">START WITH A QUESTION</div>
+                <div class="prompt-grid">
+                    {% if user.is_authenticated %}<button class="prompt-chip full-prompt-btn" data-prompt="How many calories have I consumed today?">My intake today <i class="bi bi-arrow-up-right"></i></button>{% endif %}
+                    <button class="prompt-chip full-prompt-btn" data-prompt="How many calories should I eat for fat loss if I weigh 70 kg? Explain what other details you need for a better estimate.">Estimate calorie needs <i class="bi bi-arrow-up-right"></i></button>
+                    <button class="prompt-chip full-prompt-btn" data-prompt="Explain how I should balance protein, carbohydrates, and fats for my goal.">Balance my macros <i class="bi bi-arrow-up-right"></i></button>
+                    <button class="prompt-chip full-prompt-btn" data-prompt="Give me practical instructions for logging a meal and checking its nutrition." >Logging a meal <i class="bi bi-arrow-up-right"></i></button>
+                    <a class="prompt-chip" href="{% url 'weekly_plan' %}">Build my weekly plan <i class="bi bi-calendar-week"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <footer class="assistant-composer">
+            <div id="fullChatImagePreview" class="chat-image-preview" hidden></div>
+            <input type="file" id="fullChatImageInput" accept="image/png,image/jpeg,image/webp" hidden>
+            <div class="assistant-composer-box">
+                <button id="fullChatAttachBtn" class="chat-attach-btn" type="button" aria-label="Attach an image" title="Attach a food or fitness image"><i class="bi bi-paperclip"></i></button>
+                <input type="text" id="fullChatInput" class="form-control chat-text-input" placeholder="Ask Fitora anything, or attach an image…" maxlength="1000" autocomplete="off">
+                <button id="fullChatSendBtn" class="btn btn-fitora-primary chat-send-btn" type="button" aria-label="Send message"><i class="bi bi-arrow-up"></i></button>
+            </div>
+            <div class="composer-note"><span>Images are sent to the configured AI provider for analysis. Avoid sensitive documents.</span><span>AI estimates are informational, not medical advice.</span></div>
+        </footer>
+    </div>
+</section>
+{% endblock %}
