@@ -4,12 +4,13 @@ import binascii
 import logging
 from django.shortcuts import render
 from django.http import JsonResponse
-
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .service import FitoraAssistantService
 from .mongo_client import log_chat_interaction, log_user_feedback
 
 logger = logging.getLogger('fitora.assistant')
 
+@ensure_csrf_cookie
 def assistant_page_view(request):
     """
     Dedicated full-page AI Assistant consultation view.
@@ -17,7 +18,6 @@ def assistant_page_view(request):
     return render(request, 'assistant/assistant.html', {
         'title': 'Ask Fitora AI Assistant'
     })
-
 def chat_api_view(request):
     """POST API for text and image-assisted conversations."""
     if request.method != 'POST':
