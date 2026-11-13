@@ -27,7 +27,7 @@ def get_mongo_database():
             )
         # Verify connection
         _mongo_client.admin.command('ping')
-        db_name = getattr(settings, 'MONGODB_DB_NAME', 'fitora_logs')
+        db_name = getattr(settings, 'MONGODB_DB_NAME', 'fitora')
         return _mongo_client[db_name]
     except Exception as e:
         logger.warning(f"MongoDB Atlas connection unavailable: {str(e)}")

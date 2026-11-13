@@ -149,7 +149,7 @@ LOGOUT_REDIRECT_URL = 'home'
 
 # MongoDB Atlas Settings
 MONGODB_URI = os.environ.get('MONGODB_URI', '')
-MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'fitora_logs')
+MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'fitora')
 
 # AI Assistant Settings
 AI_API_KEY = os.environ.get('AI_API_KEY', '').strip()
